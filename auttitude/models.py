@@ -54,7 +54,7 @@ class Vector(np.ndarray):
         defaults to (1, 0, 0) if the vector is vertical."""
         if self[2] == 1.:
             return Vector((1., 0., 0.))
-        direction = Vector((-self[1], self[0], 0.))
+        direction = Vector((self[1], -self[0], 0.))
         return direction/direction.length
 
     @property
@@ -62,7 +62,7 @@ class Vector(np.ndarray):
         """Returns the vector perpendicular to both this vector
         and it's direction vector. If this vector represents a plane,
         the resulting vector represents the maximum slope direction."""
-        return Vector(np.cross(self.direction_vector, self/self.length))
+        return Vector(np.cross(self/self.length, self.direction_vector))
 
     @property
     def projection_matrix(self):

@@ -23,11 +23,21 @@ def sphere_plane(data):
 
 
 def dcos_line(attitude):
-    """Converts lines into direction cosines."""
+    """Converts the attitude of lines (trend, plunge) into
+    direction cosines."""
     tr, pl = np.transpose(np.radians(attitude))  # trend, plunge
     return np.array((np.cos(pl)*np.sin(tr),
                     np.cos(pl)*np.cos(tr),
                      -np.sin(pl))).T
+
+
+def dcos_rake(attitude):
+    """Converts the attitude of lines (dip direction, dip, rake) into
+    direction cosines."""
+    dd, d, rk = np.transpose(np.radians(attitude))  # trend, plunge
+    return np.array((np.sin(rk)*np.cos(d)*np.sin(dd) - np.cos(rk)*np.cos(dd),
+                    np.sin(rk)*np.cos(d)*np.cos(dd) + np.cos(rk)*np.sin(dd),
+                     -np.sin(rk)*np.sin(d))).T
 
 
 def sphere_line(data):
