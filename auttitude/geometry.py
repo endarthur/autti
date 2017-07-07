@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from math import sqrt
+from math import sqrt, cos
 
 import numpy as np
 
@@ -101,3 +101,37 @@ def normalized_cross(a, b):
     c = np.cross(a, b)
     length = sqrt(c.dot(c))
     return c/length if length > 0 else c
+
+def general_plane_intersection(n_a, da, n_b, db):
+    # https://en.wikipedia.org/wiki/Intersection_curve
+    l_v = np.cross(n_a, n_b)
+    norm_l = sqrt(l_v.dot(l_v))
+    if norm_l == 0:
+        return None
+    else:
+        l_v /= norm_l
+    aa = n_a.dot(n_a)
+    bb = n_b.dot(n_b)
+    ab = n_a.dot(n_b)
+    d_ = 1./(aa*bb - ab*ab)
+    l_0 = (da*bb - db*ab)*d_*n_a + (db*aa - da*ab)*d_*n_b
+    return l_v, l_0
+
+
+# Should the answers be normalized?
+def small_circle_intersection(axis_a, angle_a, axis_b, angle_b):
+    line = general_plane_intersection(axis_a, cos(angle_a),
+                                      axis_b, cos(angle_b))
+    if not line:
+        return None
+    l_v, l_0 = line
+    # https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
+    b = 2*l_v.dot(l_0)
+    delta = b*b - 4*(l_0.dot(l_0) - 1)
+    if delta < 0:
+        return None
+    elif delta == 0:
+        return -b/2.,
+    else:
+        sqrt_delta = sqrt(delta)
+        return l_0 + l_v*(-b - sqrt_delta)/2., l_0 + l_v*(-b + sqrt_delta)/2.

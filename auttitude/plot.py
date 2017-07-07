@@ -50,6 +50,7 @@ class ProjectionPlot(object):
             self.clear_diagram()
         else:
             self.axis = axis
+        self.primitive = None
 
     def clear_diagram(self):
         """Clears the plot area and plot the primitive."""
@@ -77,7 +78,6 @@ class ProjectionPlot(object):
     def plot_poles(self, vectors, **kwargs):
         """Plot points on the diagram. Accepts and passes aditional key word
         arguments to axis.plot."""
-        x, y, z = np.transpose(vectors)
         X, Y = self.projection(vectors)
         # use the default values if not user input
         # https://stackoverflow.com/a/6354485/1457481

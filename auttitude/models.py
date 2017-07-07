@@ -117,6 +117,7 @@ class Vector(np.ndarray):
 
 class Plane(Vector):
     def intersect(self, other):
+        """Returns the plane containing both lines."""
         line = Line(self.cross(other))
         line_length = line.length
         return line/line_length if line_length > 0 else line
@@ -133,6 +134,7 @@ class Plane(Vector):
 
 class Line(Vector):
     def intersect(self, other):
+        """Returns the line of intersection of both planes."""
         plane = Plane(self.cross(other))
         plane_length = plane.length
         return plane/plane_length if plane_length > 0 else plane
@@ -160,18 +162,23 @@ class SphericalData(np.ndarray):
 
     @reify  # Is reify really needed?
     def stats(self):
+        """Contains spherical statstics for the data."""
         return SphericalStatistics(self)
 
     @property
     def sphere(self):
+        """Converts this data from direction cosines to attitudes."""
         return sphere_line(self)
 
     def count_fisher(self, k=None, grid=None):
+        """Performs grid counting of the data by Fisher smoothing."""
         if grid is None:
             grid = default_grid
         return grid.count_fisher(self, k)
 
     def count_kamb(self, theta=None, grid=None):
+        """Performs grid counting of the data by small circles of
+        apperture theta."""
         if grid is None:
             grid = default_grid
         return grid.count_kamb(self, theta)
@@ -210,6 +217,7 @@ class PlaneData(SphericalData):
 
     @property
     def sphere(self):
+        """Converts this data from direction cosines to attitudes."""
         return sphere_plane(self)
 
 
@@ -218,6 +226,7 @@ class LineData(SphericalData):
 
 
 class SphericalStatistics(object):
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, data):  # Should this really be built by default?
         self.n = len(data)
         self.resultant_vector = Vector(np.sum(data, axis=0))
