@@ -127,8 +127,12 @@ class ProjectionPlot(object):
         if contour_mode in ('fillover', 'fill'):
             contour_fill = self.axis.contourf(xi, yi, zi, intervals,
                                               **options)
+            for collection in contour_fill.collections:
+                collection.set_clip_path(self.primitive)
         if contour_mode != 'fill':
             contour_lines = self.axis.contour(xi, yi, zi, intervals, **options)
+            for collection in contour_lines.collections:
+                collection.set_clip_path(self.primitive)
 
         return contour_fill if contour_fill is not None else contour_lines
         # add colorbar somewhere
