@@ -1,9 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+from math import sin, cos, radians
+
 import numpy as np
 
-from matplotlib.patches import Circle
+from matplotlib.patches import Circle, FancyArrowPatch
 from matplotlib.collections import LineCollection
+from matplotlib.lines import Line2D
 from matplotlib.mlab import griddata
 
 from .geometry import project_equal_area  # , read_equal_area
@@ -41,6 +44,9 @@ class ProjectionPlot(object):
     contour_defaults = {"cmap": "Reds",
                         "linestyles": "-",
                         "antialiased": True}
+
+    slip_defaults = {"lw": 1.0,
+                     "ls": "-"}
 
     def __init__(self, axis=None, projection=project_equal_area):
         self.projection = projection
@@ -126,3 +132,28 @@ class ProjectionPlot(object):
 
         return contour_fill if contour_fill is not None else contour_lines
         # add colorbar somewhere
+
+    def plot_slip_linear(self, planes, lines, sense=True, arrowsize=radians(10),
+                         arrowcolor="#4D4D4D", footwall=False, **kwargs):
+        options = dict(self.slip_defaults.items() + kwargs.items())
+        for plane, line in zip(planes, lines):
+            arrow_from = cos(arrowsize/2.)*plane + sin(arrowsize/2.)*line
+            arrow_to = cos(-arrowsize/2.)*plane + sin(-arrowsize/2.)*line
+            if footwall:
+                arrow_from, arrow_to = arrow_to, arrow_from
+            X, Y = self.projection((arrow_from, arrow_to))
+            if not sense:
+                self.axis.add_line(Line2D(X, Y, c=arrowcolor,
+                                          label='_nolegend_', **options))
+            else:
+                a, b = (X[0], Y[0]), (X[1], Y[1])
+                self.axis.add_patch(FancyArrowPatch(a, b, shrinkA=0.0,
+                    shrinkB=0.0, arrowstyle='->,head_length=2.5,head_width=1',
+                    connectionstyle='arc3,rad=0.0', mutation_scale=2.0,
+                    ec=arrowcolor, **options))
+
+    def plot_slickenlines(self, planes, lines, sense=True,
+                          arrowsize=radians(10), arrowcolor="#4D4D4D",
+                          footwall=False, **kwargs):
+        self.plot_slip_linear(lines, planes, sense, arrowsize, arrowcolor,
+                              not footwall, **kwargs)

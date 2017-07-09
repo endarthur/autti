@@ -6,7 +6,7 @@ import numpy as np
 
 
 def dcos_plane(attitude):
-    """Converts poles into direction cossines."""
+    """Converts poles into direction cossines."""  # bad
     dd, d = np.transpose(np.radians(attitude))  # dip direction, dip
     return np.array((-np.sin(d)*np.sin(dd),
                      -np.sin(d)*np.cos(dd),
@@ -14,7 +14,7 @@ def dcos_plane(attitude):
 
 
 def sphere_plane(data):
-    """Calculates the attitude of poles direction cossines."""
+    """Calculates the attitude of poles direction cossines."""   # bad
     x, y, z = np.transpose(data)
     sign_z = np.where(z > 0, 1, -1)
     z = np.clip(z, -1., 1.)
@@ -24,7 +24,7 @@ def sphere_plane(data):
 
 def dcos_line(attitude):
     """Converts the attitude of lines (trend, plunge) into
-    direction cosines."""
+    direction cosines."""  # OK?
     tr, pl = np.transpose(np.radians(attitude))  # trend, plunge
     return np.array((np.cos(pl)*np.sin(tr),
                     np.cos(pl)*np.cos(tr),
@@ -33,7 +33,7 @@ def dcos_line(attitude):
 
 def dcos_rake(attitude):
     """Converts the attitude of lines (dip direction, dip, rake) into
-    direction cosines."""
+    direction cosines."""  # OK?
     dd, d, rk = np.transpose(np.radians(attitude))  # trend, plunge
     return np.array((np.sin(rk)*np.cos(d)*np.sin(dd) - np.cos(rk)*np.cos(dd),
                     np.sin(rk)*np.cos(d)*np.cos(dd) + np.cos(rk)*np.sin(dd),
@@ -41,7 +41,7 @@ def dcos_rake(attitude):
 
 
 def sphere_line(data):
-    """Calculate the attitude of lines direction cosines."""
+    """Returns the attitude of lines direction cosines."""  # bad
     x, y, z = np.transpose(data)
     sign_z = np.where(z > 0, -1, 1)
     z = np.clip(z, -1., 1.)
@@ -50,7 +50,9 @@ def sphere_line(data):
 
 
 def project_equal_angle(data, invert_positive=True):
-    """Projects a point from the unit sphere to a plane using
+    """equal-angle (stereographic) projection.
+
+    Projects a point from the unit sphere to a plane using
     stereographic projection"""
     x, y, z = np.transpose(data)
     if invert_positive:
@@ -60,7 +62,9 @@ def project_equal_angle(data, invert_positive=True):
 
 
 def read_equal_angle(data):
-    """Inverts the projection of a point from the unit sphere
+    """inverse equal-angle (stereographic) projection.
+
+    Inverts the projection of a point from the unit sphere
     to a plane using stereographic projection"""
     X, Y = np.transpose(data)
     x = 2.*X/(1. + X*X + Y*Y)
@@ -70,7 +74,9 @@ def read_equal_angle(data):
 
 
 def project_equal_area(data, invert_positive=True):
-    """Projects a point from the unit sphere to a plane using
+    """equal-area (schmidt-lambert) projection.
+
+    Projects a point from the unit sphere to a plane using
     lambert equal-area projection, though shrinking the projected
     sphere radius to 1 from sqrt(2)."""
     x, y, z = np.transpose(data)
@@ -85,7 +91,9 @@ def project_equal_area(data, invert_positive=True):
 
 
 def read_equal_area(data):
-    """Inverts the projection of a point from the unit sphere
+    """inverse equal-area (schmidt-lambert) projection.
+
+    Inverts the projection of a point from the unit sphere
     to a plane using lambert equal-area projection, cosidering
     that the projected radius of the sphere was shrunk to 1 from
     sqrt(2)."""
@@ -97,12 +105,14 @@ def read_equal_area(data):
 
 
 def normalized_cross(a, b):
-    """Returns the normalized cross product between input vectors"""
+    """Returns the normalized cross product between input vectors."""
     c = np.cross(a, b)
     length = sqrt(c.dot(c))
     return c/length if length > 0 else c
 
 def general_plane_intersection(n_a, da, n_b, db):
+    """Returns a point and direction vector for the line of intersection
+    of two planes in space, or None if planes are parallel."""
     # https://en.wikipedia.org/wiki/Intersection_curve
     l_v = np.cross(n_a, n_b)
     norm_l = sqrt(l_v.dot(l_v))
@@ -120,6 +130,7 @@ def general_plane_intersection(n_a, da, n_b, db):
 
 # Should the answers be normalized?
 def small_circle_intersection(axis_a, angle_a, axis_b, angle_b):
+    """Returns, if exists, the intersection of two small circles."""
     line = general_plane_intersection(axis_a, cos(angle_a),
                                       axis_b, cos(angle_b))
     if not line:

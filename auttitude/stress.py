@@ -3,6 +3,7 @@
 import numpy as np
 
 from .models import LineData
+from .grid import default_grid
 
 
 def michael(planes, lines):
@@ -51,6 +52,17 @@ def michael(planes, lines):
                               (s12, s22, s23),
                               (s13, s23, -(s11 + s22))))
     return stress_matrix, residuals[0]
+
+
+def angelier_graphical(planes, lines, grid=default_grid.grid):
+    try:  # Try calculating directly with numpy arrays
+        result = (grid.dot(np.transpose(planes))*grid.dot(np.transpose(lines))).sum(axis=1)*2
+        return result
+    except MemoryError:
+        result = np.zeros((grid.shape[0], 1))
+        for input_node, output_node in zip(grid, result):
+            output_node[:] = 2*input_node.dot(planes)*input_node.dot(lines).sum()
+    return result
 
 
 def principal_stresses(stress_matrix):
