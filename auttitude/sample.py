@@ -14,7 +14,7 @@ def fisher_sample(mean_vector, kappa, n):
     dip_vector = mean_vector.dip_vector
     kappa = kappa
     theta_sample = np.random.uniform(0, 2*pi, n)
-    alpha_sample = np.random.vonmises(0, kappa, n)
+    alpha_sample = np.random.vonmises(0, kappa/2., n)  # Why?
     return models.SphericalData(((direction_vector[:, None]*np.cos(theta_sample)
                                   + dip_vector[:, None]*np.sin(theta_sample))
                                  *np.sin(alpha_sample)
