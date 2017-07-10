@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from .models import LineData
-from .grid import default_grid
+from models import LineData
+from grid import default_grid
 
 
 def michael(planes, lines):

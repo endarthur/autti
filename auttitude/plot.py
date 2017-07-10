@@ -9,7 +9,7 @@ from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from matplotlib.mlab import griddata
 
-from .geometry import project_equal_area  # , read_equal_area
+from auttitude.geometry import project_equal_area  # , read_equal_area
 
 
 def clip_lines(data, clip_radius=1.1):

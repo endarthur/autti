@@ -5,7 +5,7 @@ from math import sinh
 
 import numpy as np
 
-from .geometry import dcos_line
+from geometry import dcos_line
 
 
 def optimize_k(data):
@@ -49,8 +49,6 @@ class SphericalGrid(object):
         try:  # Try calculating directly with numpy arrays
             return np.exp(k * (np.abs(np.dot(self.grid, np.transpose(data)))
                                - 1)).sum(axis=1)
-
-            return result
         except MemoryError:
             result = np.zeros((self.grid.shape[0], 1))
             for input_node, output_node in zip(self.grid, result):
