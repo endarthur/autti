@@ -49,7 +49,7 @@ class SphericalGrid(object):
         try:  # Try calculating directly with numpy arrays
             return np.exp(k * (np.abs(np.dot(self.grid, np.transpose(data)))
                                - 1)).sum(axis=1)
-        except (MemoryError, ValueError) as error:
+        except (MemoryError, ValueError):
             result = np.zeros(self.grid.shape[0])
             for input_node, output_node in zip(self.grid, result):
                 output_node[:] = np.exp(k *
@@ -70,7 +70,7 @@ class SphericalGrid(object):
             return np.where(np.abs(np.dot(self.grid,
                                           np.transpose(data)))
                             >= theta, 1, 0).sum(axis=1)
-        except (MemoryError, ValueError) as error:
+        except (MemoryError, ValueError):
             result = np.zeros(self.grid.shape[0])
             for input_node, output_node in zip(self.grid, result):
                 output_node[:] = np.where(np.abs(np.dot(input_node,
