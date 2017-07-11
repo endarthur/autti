@@ -39,30 +39,23 @@ def net_grid(gc_spacing=10., sc_spacing=10., n=360, clean_caps=True):
     else:
         theta_gc = np.linspace(0., pi, n)
     gc_range = np.arange(0., pi + gc_spacing, gc_spacing)
+    gc_range = np.hstack((gc_range, -gc_range))
     sc_range = np.arange(0., pi + sc_spacing, sc_spacing)
     i, j, k = np.eye(3)
     ik_circle = i[:, None]*np.sin(theta) + k[:, None]*np.cos(theta)
     great_circles = [(np.array((cos(alpha), .0, -sin(alpha)))[:, None]
                       *np.sin(theta_gc)
                       + j[:, None]*np.cos(theta_gc)).T
-                     for alpha in gc_range] +\
-                    [(np.array((cos(alpha), .0, -sin(alpha)))[:, None]
-                      *np.sin(theta_gc)
-                      + j[:, None]*np.cos(theta_gc)).T
-                     for alpha in -gc_range]
+                     for alpha in gc_range]
     small_circles = [(ik_circle*sin(alpha) + j[:, None]*cos(alpha)).T
                      for alpha in sc_range]
     if clean_caps:
-        theta_gc = np.linspace(-sc_spacing, sc_spacing, n)
-        great_circles += [(np.array((cos(alpha), .0, -sin(alpha)))[:, None]
-                           *np.sin(theta_gc)
-                           + j[:, None]*np.cos(theta_gc)).T
-                          for alpha in (0, pi/2.)]
-        theta_gc = np.linspace(pi-sc_spacing, pi+sc_spacing, n)
-        great_circles += [(np.array((cos(alpha), .0, -sin(alpha)))[:, None]
-                           *np.sin(theta_gc)
-                           + j[:, None]*np.cos(theta_gc)).T
-                          for alpha in (0, pi/2.)]
+        for cap in (0, pi):
+            theta_gc = np.linspace(cap - sc_spacing, cap + sc_spacing, n)
+            great_circles += [(np.array((cos(alpha), .0, -sin(alpha)))[:, None]
+                               *np.sin(theta_gc)
+                               + j[:, None]*np.cos(theta_gc)).T
+                              for alpha in (0, pi/2.)]
     return great_circles, small_circles
 
 
