@@ -6,7 +6,7 @@ direction_pattern = re.compile(b'([NS]?)([0-9.]*)([EW]?).*')
 dip_pattern = re.compile(b'([0-9.]*)([NESW]*).*')
 
 
-def translate_attitude(direction, dip, strike=False):
+def process_dip(dip):
     try:
         dip = float(dip)
         dip_quadrant = ""
@@ -15,6 +15,10 @@ def translate_attitude(direction, dip, strike=False):
         dip = float(dip)
         if dip_quadrant not in ("NE", "SE", "SW", "NW"):
             raise ValueError("invalid dip quadrant in: %s" % dip)
+    return dip, dip_quadrant
+
+
+def process_direction(direction):
     try:
         direction = float(direction)
     except ValueError:
@@ -33,6 +37,12 @@ def translate_attitude(direction, dip, strike=False):
                 direction = 180 + value
             elif not trailing:
                 raise ValueError("Invalid direction: %s" % direction)
+    return direction
+
+
+def translate_attitude(direction, dip, strike=False):
+    dip, dip_quadrant = process_dip(dip)
+    direction = process_direction(direction)
     if dip_quadrant:
         direction = direction % 180.
         if 0 <= direction < 90.:
