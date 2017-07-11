@@ -16,7 +16,7 @@ from auttitude.geometry import project_equal_area, build_rotation_matrix
 def clip_lines(data, z_tol=.1):
     """segment point pairs between inside and outside of primitive, for
     avoiding spurious lines when plotting circles."""
-    x, y, z = np.transpose(data)
+    z = np.transpose(data)[2]
     inside = z < z_tol
     results = []
     current = []
@@ -213,9 +213,12 @@ class ProjectionPlot(object):
                 foreground=foreground)])
 
     def plot_net(self, gc_spacing=10., sc_spacing=10., n=360,
-                  gc_options={}, sc_options={}, clean_caps=True,
-                  plot_cardinal_points=True, cardinal_options={}):
+                  gc_options=None, sc_options=None, clean_caps=True,
+                  plot_cardinal_points=True, cardinal_options=None):
         gc, sc = net_grid(gc_spacing, sc_spacing, n, clean_caps)
+        gc_options = {} if gc_options is None else gc_options
+        sc_options = {} if sc_options is None else sc_options
+        cardinal_options = {} if cardinal_options is None else cardinal_options
         gc_options = dict(self.net_gc_defaults.items() + gc_options.items())
         self.plot_circles(gc, **gc_options)
         sc_options = dict(self.net_sc_defaults.items() + sc_options.items())
