@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from math import sqrt, cos
+from math import sqrt, cos, sin, radians
 
 import numpy as np
 
@@ -149,3 +149,22 @@ def small_circle_intersection(axis_a, angle_a, axis_b, angle_b):
     else:
         sqrt_delta = sqrt(delta)
         return l_0 + l_v*(-b - sqrt_delta)/2., l_0 + l_v*(-b + sqrt_delta)/2.
+
+def build_rotation_matrix(azim, plng, rake):
+    """Returns the rotation matrix that rotates the axis to the given plane
+    with rake."""
+    azim, plng, rake = radians(azim), radians(plng), radians(rake)
+
+    R1 = np.array((( cos(rake), 0.,        sin(rake)),
+                   ( 0.,        1.,         0.      ),
+                   (-sin(rake), 0.,        cos(rake))))
+
+    R2 = np.array((( 1.,        0.,        0.       ),
+                   ( 0.,        cos(plng), sin(plng)),
+                   ( 0.,       -sin(plng), cos(plng))))
+
+    R3 = np.array((( cos(azim), sin(azim), 0.       ),
+                   (-sin(azim), cos(azim), 0.       ),
+                   ( 0.,        0.,        1.       )))
+
+    return R3.dot(R2).dot(R1)
