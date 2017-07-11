@@ -95,6 +95,7 @@ class ProjectionPlot(object):
         # use the default values if not user input
         # https://stackoverflow.com/a/6354485/1457481
         options = dict(self.circle_defaults.items() + kwargs.items())
+        # should change this for better support of huge data
         projected_circles = [segment for circle in circles for segment in
                              clip_lines(np.transpose(self.projection(circle,
                                                      invert_positive=False)))]

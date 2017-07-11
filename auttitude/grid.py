@@ -51,8 +51,8 @@ class SphericalGrid(object):
                                - 1)).sum(axis=1)
         except (MemoryError, ValueError):
             result = np.zeros(self.grid.shape[0])
-            for input_node, output_node in zip(self.grid, result):
-                output_node[:] = np.exp(k *
+            for i, input_node in enumerate(self.grid):
+                result[i] = np.exp(k *
                                         (np.abs(np.dot(input_node,
                                                 np.transpose(data)))
                                          - 1)).sum()
@@ -72,8 +72,8 @@ class SphericalGrid(object):
                             >= theta, 1, 0).sum(axis=1)
         except (MemoryError, ValueError):
             result = np.zeros(self.grid.shape[0])
-            for input_node, output_node in zip(self.grid, result):
-                output_node[:] = np.where(np.abs(np.dot(input_node,
+            for i, input_node in enumerate(self.grid):
+                result[i] = np.where(np.abs(np.dot(input_node,
                                                         np.transpose(data)))
                                           >= theta, 1, 0).sum()
         return result

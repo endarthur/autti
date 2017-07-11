@@ -55,9 +55,12 @@ def project_equal_angle(data, invert_positive=True):
     Projects a point from the unit sphere to a plane using
     stereographic projection"""
     x, y, z = np.transpose(data)
+    d = 1./np.sqrt(x*x + y*y + z*z)
     if invert_positive:
-        c = np.where(z > 0, -1, 1)
+        c = np.where(z > 0, -1, 1)*d
         x, y, z = c*x, c*y, c*z
+    else:
+        x, y, z = d*x, d*y, d*z
     return x/(1-z), y/(1-z)
 
 

@@ -23,4 +23,4 @@ def fisher_sample(mean_vector, kappa, n):
 def uniform_sample(n):
     """Sample n vectors for the uniform distribution on the sphere."""
     samples = np.random.normal(size=(n, 3))
-    return models.SphericalData(samples/np.linalg.norm(samples, axis=0))
+    return models.SphericalData(samples/np.linalg.norm(samples, axis=1)[:, None])
