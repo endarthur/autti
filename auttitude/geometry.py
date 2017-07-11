@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# pylint: disable=invalid-name
 from math import sqrt, cos, sin, radians
 
 import numpy as np
@@ -27,7 +28,7 @@ def dcos_line(attitude):
     direction cosines."""  # OK?
     tr, pl = np.transpose(np.radians(attitude))  # trend, plunge
     return np.array((np.cos(pl)*np.sin(tr),
-                    np.cos(pl)*np.cos(tr),
+                     np.cos(pl)*np.cos(tr),
                      -np.sin(pl))).T
 
 
@@ -36,7 +37,7 @@ def dcos_rake(attitude):
     direction cosines."""  # OK?
     dd, d, rk = np.transpose(np.radians(attitude))  # trend, plunge
     return np.array((np.sin(rk)*np.cos(d)*np.sin(dd) - np.cos(rk)*np.cos(dd),
-                    np.sin(rk)*np.cos(d)*np.cos(dd) + np.cos(rk)*np.sin(dd),
+                     np.sin(rk)*np.cos(d)*np.cos(dd) + np.cos(rk)*np.sin(dd),
                      -np.sin(rk)*np.sin(d))).T
 
 
@@ -49,18 +50,23 @@ def sphere_line(data):
                      np.degrees(np.arcsin(np.abs(z))))).T
 
 
+def normalize_and_invert_positive(data, invert_positive=True):
+    """Normalize and (by default) invert data to lower hemisphere."""
+    x, y, z = np.transpose(data)
+    d = 1./np.sqrt(x*x + y*y + z*z)
+    if invert_positive:
+        c = np.where(z > 0, -1, 1)*d
+        return c*x, c*y, c*z
+    else:
+        return d*x, d*y, d*z
+
+
 def project_equal_angle(data, invert_positive=True):
     """equal-angle (stereographic) projection.
 
     Projects a point from the unit sphere to a plane using
     stereographic projection"""
-    x, y, z = np.transpose(data)
-    d = 1./np.sqrt(x*x + y*y + z*z)
-    if invert_positive:
-        c = np.where(z > 0, -1, 1)*d
-        x, y, z = c*x, c*y, c*z
-    else:
-        x, y, z = d*x, d*y, d*z
+    x, y, z = normalize_and_invert_positive(data, invert_positive)
     return x/(1-z), y/(1-z)
 
 
@@ -82,14 +88,7 @@ def project_equal_area(data, invert_positive=True):
     Projects a point from the unit sphere to a plane using
     lambert equal-area projection, though shrinking the projected
     sphere radius to 1 from sqrt(2)."""
-    x, y, z = np.transpose(data)
-    # normalize the data before projection
-    d = 1./np.sqrt(x*x + y*y + z*z)
-    if invert_positive:
-        c = np.where(z > 0, -1, 1)*d
-        x, y, z = c*x, c*y, c*z
-    else:
-        x, y, z = d*x, d*y, d*z
+    x, y, z = normalize_and_invert_positive(data, invert_positive)
     return x*np.sqrt(1/(1-z)), y*np.sqrt(1/(1-z))
 
 
@@ -153,6 +152,7 @@ def small_circle_intersection(axis_a, angle_a, axis_b, angle_b):
 def build_rotation_matrix(azim, plng, rake):
     """Returns the rotation matrix that rotates the axis to the given plane
     with rake."""
+    # pylint: disable=bad-whitespace
     azim, plng, rake = radians(azim), radians(plng), radians(rake)
 
     R1 = np.array((( cos(rake), 0.,        sin(rake)),
