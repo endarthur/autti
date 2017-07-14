@@ -106,6 +106,19 @@ def read_equal_area(data):
     return x, y, z
 
 
+def project_orthographic(data, invert_positive):
+    """orthographic projection on z=0 plane."""
+    X, Y, _ = normalize_and_invert_positive(data, invert_positive)
+    return X, Y
+
+
+def read_orthographic(data):
+    """ïnverse orthographic projection from z=0 plane to unit sphere."""
+    x, y = np.transpose(data)
+    z = np.sqrt(1 - x*x - y*y)
+    return x, y, z
+
+
 def normalized_cross(a, b):
     """Returns the normalized cross product between input vectors."""
     c = np.cross(a, b)
