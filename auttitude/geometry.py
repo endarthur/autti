@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # pylint: disable=invalid-name
-from math import sqrt, cos, sin, radians
+from math import sqrt, cos, acos, sin, radians, pi
 
 import numpy as np
 
@@ -162,6 +162,7 @@ def small_circle_intersection(axis_a, angle_a, axis_b, angle_b):
         sqrt_delta = sqrt(delta)
         return l_0 + l_v*(-b - sqrt_delta)/2., l_0 + l_v*(-b + sqrt_delta)/2.
 
+
 def build_rotation_matrix(azim, plng, rake):
     """Returns the rotation matrix that rotates the axis to the given plane
     with rake."""
@@ -181,3 +182,18 @@ def build_rotation_matrix(azim, plng, rake):
                    ( 0.,        0.,        1.       )))
 
     return R3.dot(R2).dot(R1)
+
+
+def adjust_lines_to_planes(lines, planes):
+    """Project each given line to it's respective plane. Returns the projected
+    lines and the angle between each line and plane prior to projection."""
+    angles = np.zeros(len(lines))
+    adjusted_lines = np.zeros_like(lines)
+    for i, (line, plane) in enumerate(zip(lines, planes)):
+        cos_theta = np.dot(line, plane)
+        angles[i] = pi/2. - acos(cos_theta)
+        adjusted_line = line - line*cos_theta
+        adjusted_lines[i] = adjusted_line/sqrt(np.dot(adjusted_line,
+                                                      adjusted_line))
+    return adjusted_lines, angles
+
