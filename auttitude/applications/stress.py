@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 
-from models import LineData
-from grid import default_grid
+from auttitude.datamodels import LineSet
+from auttitude.stats import DEFAULT_GRID
 
 
 def michael(planes, lines):
@@ -54,7 +54,7 @@ def michael(planes, lines):
     return stress_matrix, residuals[0]
 
 
-def angelier_graphical(planes, lines, grid=default_grid.grid):
+def angelier_graphical(planes, lines, grid=DEFAULT_GRID.grid):
     try:  # Try calculating directly with numpy arrays
         result = (grid.dot(np.transpose(planes))*grid.dot(np.transpose(lines))).sum(axis=1)*2
         return result
@@ -68,5 +68,5 @@ def angelier_graphical(planes, lines, grid=default_grid.grid):
 def principal_stresses(stress_matrix):
     eigenvalues, eigenvectors = np.linalg.eigh(stress_matrix)
     eigenvalues_order = (eigenvalues).argsort()
-    eigenvectors = LineData(eigenvectors[:, eigenvalues_order].T)
+    eigenvectors = LineSet(eigenvectors[:, eigenvalues_order].T)
     return eigenvectors, eigenvalues
