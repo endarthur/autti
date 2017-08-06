@@ -6,5 +6,5 @@ from auttitude.io import dcos_plane, sphere_plane, dcos_line, dcos_rake, sphere_
 from auttitude.stats import SphericalGrid, DEFAULT_GRID
 from auttitude.io import translate_attitude
 
-from auttitude import stats
-from auttitude import math
+import auttitude.stats
+import auttitude.math

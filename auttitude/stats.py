@@ -5,7 +5,7 @@ from math import asin, cos, degrees, log, pi, radians, sin, sinh
 
 import numpy as np
 
-from auttitude import datamodels
+import auttitude as at
 from auttitude.io import dcos_line, sphere_line
 
 
@@ -83,7 +83,7 @@ class SphericalStatistics(object):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, data):  # Should this really be built by default?
         n = len(data)
-        self.resultant_vector = datamodels.Vector(np.sum(data, axis=0))
+        self.resultant_vector = at.datamodels.Vector(np.sum(data, axis=0))
         self.mean_resultant_vector = self.resultant_vector / n
         self.mean_vector = self.resultant_vector / self.resultant_vector.length
         self.resultant_length = self.resultant_vector.length
@@ -101,7 +101,7 @@ class SphericalStatistics(object):
         lambda_sum = eigenvalues.sum()
 
         self.eigenvectors = [
-            datamodels.Vector(eigenvector)
+            at.datamodels.Vector(eigenvector)
             for eigenvector in eigenvectors[:, eigenvalues_order].T
         ]
         self.eigenvectors_attitude = sphere_line(self.eigenvectors)
@@ -127,13 +127,13 @@ class SphericalStatistics(object):
 
 def sample_fisher(mean_vector, kappa, n):
     """Samples n vectors from von Mises-Fisher distribution."""
-    mean_vector = datamodels.Vector(mean_vector)
+    mean_vector = at.datamodels.Vector(mean_vector)
     direction_vector = mean_vector.direction_vector
     dip_vector = mean_vector.dip_vector
     kappa = kappa
     theta_sample = np.random.uniform(0, 2 * pi, n)
     alpha_sample = np.random.vonmises(0, kappa / 2., n)  # Why?
-    return datamodels.VectorSet(
+    return at.datamodels.VectorSet(
         ((direction_vector[:, None] * np.cos(theta_sample) +
           dip_vector[:, None] * np.sin(theta_sample)) * np.sin(alpha_sample) +
          mean_vector[:, None] * np.cos(alpha_sample)).T)
@@ -142,7 +142,7 @@ def sample_fisher(mean_vector, kappa, n):
 def sample_uniform(n):
     """Sample n vectors for the uniform distribution on the sphere."""
     samples = np.random.normal(size=(n, 3))
-    return datamodels.VectorSet(
+    return at.datamodels.VectorSet(
         samples / np.linalg.norm(samples, axis=1)[:, None])
 
 

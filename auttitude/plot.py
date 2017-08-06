@@ -4,7 +4,12 @@ from __future__ import absolute_import
 
 import abc
 # http://treyhunner.com/2016/02/how-to-merge-dictionaries-in-python/
-from collections import ChainMap
+try:
+    from collections import ChainMap
+except ImportError:
+    from itertools import chain
+    def ChainMap(*args):
+        return dict(chain(*map(lambda d: d.items(), reversed(args))))
 from inspect import isclass
 from math import cos, pi, radians, sin, sqrt
 
