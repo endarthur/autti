@@ -14,18 +14,18 @@ class Vector(np.ndarray):
     def __new__(cls, dcos_data):
         return np.asarray(dcos_data).view(cls)
 
-    def angle(self, other):
+    def angle_with(self, other):
         """Returns the angle (in radians) between both vectors using
         the dot product between them."""
         self_length = self.length
         other_length = sqrt(other.dot(other))
         return acos(self.dot(other) / (self_length * other_length))
 
-    def cross(self, other):
+    def cross_with(self, other):
         """Returns the cross product between both vectors."""
         return Vector(np.cross(self, other))
 
-    def normalized_cross(self, other):  # Is this necessary?
+    def normalized_cross_with(self, other):  # Is this necessary?
         """Returns the normalized cross product between both vectors."""
         return Vector(normalized_cross(self, other))
 
@@ -77,13 +77,13 @@ class Vector(np.ndarray):
         return np.array(((0., -self[2], self[1]), (self[2], 0., -self[0]),
                          (-self[1], self[0], 0.)))
 
-    def rotation_matrix(self, theta):
+    def get_rotation_matrix(self, theta):
         """Returns the counterclockwise rotation matrix about this vector
         by angle theta."""
         return cos(theta)*np.eye(3) + sin(theta)*self.cross_product_matrix +\
             (1 - cos(theta))*self.projection_matrix
 
-    def great_circle(self, step=1.):
+    def get_great_circle(self, step=1.):
         """Returns an array of n points equally spaced along the great circle
         normal to this vector."""
         theta_range = np.arange(0, 2 * pi, radians(step))
@@ -92,7 +92,7 @@ class Vector(np.ndarray):
         return (self.direction_vector[:, None] * cos_range +
                 self.dip_vector[:, None] * sin_range).T,
 
-    def small_circle(self, alpha, step=1.):
+    def get_small_circle(self, alpha, step=1.):
         """Retuns a pair of arrays representing points spaced step along
         both small circles with an semi-apical opening of alpha around
         this vector."""
@@ -100,7 +100,7 @@ class Vector(np.ndarray):
             alpha)
         return sc.T, -sc.T
 
-    def arc(self, other, step=1.):
+    def arc_to(self, other, step=1.):
         """Returns an array of points spaced step along the great circle
         between both vectors."""
         normal = self.rejection_matrix.dot(other)
@@ -112,7 +112,7 @@ class Vector(np.ndarray):
 
 
 class Plane(Vector):
-    def intersect(self, other):
+    def intersection_with(self, other):
         """Returns the plane containing both lines."""
         line = Line(self.cross(other))
         line_length = line.length
@@ -177,7 +177,7 @@ class VectorSet(np.ndarray):
             grid = DEFAULT_GRID
         return grid.count_kamb(self, theta)
 
-    def normalized_cross(self, other):
+    def normalized_cross_with(self, other):
         """Returns a VectorSet object containing the normalized cross
         product of all possible pairs betweeen this VectorSet and an
         (n, 3) array-like"""
@@ -190,26 +190,26 @@ class VectorSet(np.ndarray):
                 i += 1
         return VectorSet(vectors)
 
-    def angle(self, other):
+    def angle_with(self, other):
         """Returns the angles matrix between this Spherical Data and an
         (n, 3) array-like"""
         angles = np.zeros((len(self), len(other)))
         for i, self_vector in enumerate(self):
             for j, other_vector in enumerate(other):
-                angles[i, j] = self_vector.angle(other_vector)
+                angles[i, j] = self_vector.angle_with(other_vector)
         return angles
 
-    def great_circle(self, step=1.):
+    def get_great_circle(self, step=1.):
         """Returns a generator to the great circles of this VectorSet
         vectors."""
         for vector in self:
-            yield vector.great_circle(step)[0]  # because of plot_circles
+            yield vector.get_great_circle(step)[0]  # because of plot_circles
 
 
 class PlaneSet(VectorSet):
     item_class = Plane
 
-    def intersect(self, other):
+    def intersection_with(self, other):
         return self.normalized_cross(other).view(LineSet)
 
     @property
@@ -222,4 +222,4 @@ class LineSet(VectorSet):
     item_class = Line
 
     def planes_with(self, other):
-        return self.normalized_cross(other).view(PlaneSet)
+        return self.normalized_cross_with(other).view(PlaneSet)
