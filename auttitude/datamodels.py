@@ -83,16 +83,16 @@ class Vector(np.ndarray):
         return cos(theta)*np.eye(3) + sin(theta)*self.cross_product_matrix +\
             (1 - cos(theta))*self.projection_matrix
 
-    def get_great_circle(self, step=1.):
+    def get_great_circle(self, step=radians(1.)):
         """Returns an array of n points equally spaced along the great circle
         normal to this vector."""
-        theta_range = np.arange(0, 2 * pi, radians(step))
+        theta_range = np.arange(0, 2 * pi, step)
         sin_range = np.sin(theta_range)
         cos_range = np.cos(theta_range)
         return (self.direction_vector[:, None] * cos_range +
                 self.dip_vector[:, None] * sin_range).T,
 
-    def get_small_circle(self, alpha, step=1.):
+    def get_small_circle(self, alpha, step=radians(1.)):
         """Retuns a pair of arrays representing points spaced step along
         both small circles with an semi-apical opening of alpha around
         this vector."""
@@ -100,12 +100,12 @@ class Vector(np.ndarray):
             alpha)
         return sc.T, -sc.T
 
-    def arc_to(self, other, step=1.):
+    def arc_to(self, other, step=radians(1.)):
         """Returns an array of points spaced step along the great circle
         between both vectors."""
         normal = self.rejection_matrix.dot(other)
         normal /= sqrt(normal.dot(normal))
-        theta_range = np.arange(0, self.angle(other), radians(step))
+        theta_range = np.arange(0, self.angle(other), step)
         sin_range = np.sin(theta_range)
         cos_range = np.cos(theta_range)
         return (self * cos_range[:, None] + normal * sin_range[:, None]),
@@ -199,7 +199,7 @@ class VectorSet(np.ndarray):
                 angles[i, j] = self_vector.angle_with(other_vector)
         return angles
 
-    def get_great_circle(self, step=1.):
+    def get_great_circle(self, step=radians(1.)):
         """Returns a generator to the great circles of this VectorSet
         vectors."""
         for vector in self:
