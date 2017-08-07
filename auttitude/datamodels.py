@@ -30,7 +30,7 @@ class Vector(np.ndarray):
         return Vector(normalized_cross(self, other))
 
     @property
-    def to_attitude(self):
+    def attitude(self):
         """Returns the spherical coordinates of the normalized vector,
         considering it to be a Line in geological sense, as a
         Trend/Plunge pair in degrees."""
@@ -119,7 +119,7 @@ class Plane(Vector):
         return line / line_length if line_length > 0 else line
 
     @property
-    def to_attitude(self):
+    def attitude(self):
         """Returns the spherical coordinates of the plane as a
         Dip Direction/Dip pair, in degrees."""
         x, y, z = self / self.length
@@ -160,7 +160,7 @@ class VectorSet(np.ndarray):
         return SphericalStatistics(self)
 
     @property
-    def to_attitude(self):
+    def attitude(self):
         """Converts this data from direction cosines to attitudes."""
         return sphere_line(self)
 
@@ -213,7 +213,7 @@ class PlaneSet(VectorSet):
         return self.normalized_cross(other).view(LineSet)
 
     @property
-    def to_attitude(self):
+    def attitude(self):
         """Converts this data from direction cosines to attitudes."""
         return sphere_plane(self)
 
