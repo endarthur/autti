@@ -11,22 +11,46 @@ from auttitude.stats import DEFAULT_GRID, SphericalStatistics
 
 
 class Vector(np.ndarray):
+    """
+    Class that represents one normalized vector in space. This class 
+    extends Numpy.ndarray class that is used as storage container for 
+    the information.
+
+    Parameters:
+        dcos_data: Iterable object with 3 elements (can be even another 
+        Vector) to construct a Vector from. Inside 'io' module there
+        are methods to convert attitude data to normalized direction 
+        cosines.
+    """
     def __new__(cls, dcos_data):
         return np.asarray(dcos_data).view(cls)
 
     def angle_with(self, other):
         """Returns the angle (in radians) between both vectors using
-        the dot product between them."""
+        the dot product between them.
+
+        Parameter:
+            other: A Vector like object.
+        """
         self_length = self.length
         other_length = sqrt(other.dot(other))
         return acos(self.dot(other) / (self_length * other_length))
 
     def cross_with(self, other):
-        """Returns the cross product between both vectors."""
+        """Returns the cross product between both vectors.
+
+        Parameter:
+            other: A Vector like object.
+        """
         return Vector(np.cross(self, other))
 
-    def normalized_cross_with(self, other):  # Is this necessary?
-        """Returns the normalized cross product between both vectors."""
+    def normalized_cross_with(self, other):
+        """Returns the normalized cross product between this and other
+        vectors.
+
+        Parameter:
+            other: A Vector like object.
+        """
         return Vector(normalized_cross(self, other))
 
     @property
@@ -79,13 +103,22 @@ class Vector(np.ndarray):
 
     def get_rotation_matrix(self, theta):
         """Returns the counterclockwise rotation matrix about this vector
-        by angle theta."""
+        by angle theta.
+
+        Parameters:
+            theta: Rotation angle in radians
+        """
         return cos(theta)*np.eye(3) + sin(theta)*self.cross_product_matrix +\
             (1 - cos(theta))*self.projection_matrix
 
     def get_great_circle(self, step=radians(1.)):
         """Returns an array of n points equally spaced along the great circle
-        normal to this vector."""
+        normal to this vector.
+
+        Parameters:
+            step: Angular step in radians to generate points around great 
+            circle.
+        """
         theta_range = np.arange(0, 2 * pi, step)
         sin_range = np.sin(theta_range)
         cos_range = np.cos(theta_range)
@@ -93,16 +126,28 @@ class Vector(np.ndarray):
                 self.dip_vector[:, None] * sin_range).T,
 
     def get_small_circle(self, alpha, step=radians(1.)):
-        """Retuns a pair of arrays representing points spaced step along
+        """Returns a pair of arrays representing points spaced step along
         both small circles with an semi-apical opening of alpha around
-        this vector."""
+        this vector.
+
+        Parameters:
+            alpha: Apperture of the small circle in radians
+            
+            step: Angular step in radians to generate points around small
+            circle.
+        """
         sc = self.great_circle(step)[0].T * sin(alpha) + self[:, None] * cos(
             alpha)
         return sc.T, -sc.T
 
     def arc_to(self, other, step=radians(1.)):
         """Returns an array of points spaced step along the great circle
-        between both vectors."""
+        between both vectors.
+
+        Parameters:
+            step: Angular step in radians to generate points along the 
+            great-circle arc.
+        """
         normal = self.rejection_matrix.dot(other)
         normal /= sqrt(normal.dot(normal))
         theta_range = np.arange(0, self.angle(other), step)
@@ -112,8 +157,21 @@ class Vector(np.ndarray):
 
 
 class Plane(Vector):
+    """
+    Like the Vector class but, more specifically representing a plane in 
+    space defined by the direction cosines of the plane dip direction/dip 
+    pair.
+
+    Parameters:
+        dcos_data: Direction cosines of the dip direction/dip pair.
+    """
+
     def intersection_with(self, other):
-        """Returns the plane containing both lines."""
+        """Returns the line of intersection of this and the other plane.
+
+        Parameter:
+            other: a Plane like object that will intersect with this object.
+        """
         line = Line(self.cross(other))
         line_length = line.length
         return line / line_length if line_length > 0 else line
@@ -129,14 +187,31 @@ class Plane(Vector):
 
 
 class Line(Vector):
+    """
+    Like the Vector class but, more specifically representing a line in 
+    space defined by the direction cosines of the line direction/dip.
+
+    Parameters:
+        dcos_data: Direction cosines of the line direction/dip.
+    """
+
     def plane_with(self, other):
-        """Returns the line of intersection of both planes."""
+        """Returns the plane containing this and the other line.
+
+        Parameter:
+            other: a Line like object that will define the returned plane.
+        """
         plane = Plane(self.cross(other))
         plane_length = plane.length
         return plane / plane_length if plane_length > 0 else plane
 
 
 class VectorSet(np.ndarray):
+    """Class that represents a set (collection) of Vectors.
+
+    Parameters:
+        dcos_data: Is an array of direction cosines.
+    """
     item_class = Vector
 
     def __new__(cls, dcos_data):
@@ -156,7 +231,9 @@ class VectorSet(np.ndarray):
 
     @property
     def stats(self):
-        """Contains spherical statstics for the data."""
+        """Contains spherical statistics object for the data
+        set.
+        """
         return SphericalStatistics(self)
 
     @property
@@ -165,22 +242,44 @@ class VectorSet(np.ndarray):
         return sphere_line(self)
 
     def count_fisher(self, k=None, grid=None):
-        """Performs grid counting of the data by Fisher smoothing."""
+        """Performs grid counting of the data by Fisher smoothing.
+
+        Parameters:
+            k: von Mises-Fisher k parameter, see 
+            stats.SphericalGrid.count_fisher.
+            
+            grid: A stats.Spherical grid object to count on. If None
+            the default grid defined on stats.DEFAULT_GRID will be
+            used.
+        """
         if grid is None:
             grid = DEFAULT_GRID
         return grid.count_fisher(self, k)
 
     def count_kamb(self, theta=None, grid=None):
         """Performs grid counting of the data by small circles of
-        apperture theta."""
+        aperture theta.
+
+        Parameters:
+            theta: Robin and Jowett (1986) based on Kamb (1956) theta
+            parameter, see stats.SphericalGrid.count_kamb.
+            
+            grid: A stats.Spherical grid object to count on. If None
+            the default grid defined on stats.DEFAULT_GRID will be
+            used.
+        """
         if grid is None:
             grid = DEFAULT_GRID
         return grid.count_kamb(self, theta)
 
     def normalized_cross_with(self, other):
         """Returns a VectorSet object containing the normalized cross
-        product of all possible pairs betweeen this VectorSet and an
-        (n, 3) array-like"""
+        product of all possible pairs between this VectorSet and an
+        (n, 3) array-like
+
+        Parameter:
+            other: A VectorSet like object.
+        """
         vectors = np.zeros((len(self) * len(other), 3))
         i = 0
         for self_vector in self:
@@ -192,7 +291,11 @@ class VectorSet(np.ndarray):
 
     def angle_with(self, other):
         """Returns the angles matrix between this Spherical Data and an
-        (n, 3) array-like"""
+        (n, 3) array-like
+
+        Parameter:
+            other: A VectorSet like object.
+        """
         angles = np.zeros((len(self), len(other)))
         for i, self_vector in enumerate(self):
             for j, other_vector in enumerate(other):
@@ -200,16 +303,33 @@ class VectorSet(np.ndarray):
         return angles
 
     def get_great_circle(self, step=radians(1.)):
-        """Returns a generator to the great circles of this VectorSet
-        vectors."""
+        """Returns a generator to the list of great circles of 
+        this VectorSet vectors.
+
+        Parameters:
+            step: Angular step in radians to generate points around great 
+            circle.
+        """
         for vector in self:
             yield vector.get_great_circle(step)[0]  # because of plot_circles
 
 
 class PlaneSet(VectorSet):
+    """Class that represents a set (collection) of Planes.
+
+    Parameters:
+        dcos_data: Is an array of direction cosines.
+    """
     item_class = Plane
 
     def intersection_with(self, other):
+        """Returns the intersection of all combinations of 
+        planes in this set with the planes in other set as a
+        list of lines defined as a VectorSet.
+
+        Parameter:
+            other: A PlaneSet like object.
+        """
         return self.normalized_cross(other).view(LineSet)
 
     @property
@@ -219,7 +339,19 @@ class PlaneSet(VectorSet):
 
 
 class LineSet(VectorSet):
+    """Class that represents a set (collection) of Lines.
+
+    Parameters:
+        dcos_data: Is an array of direction cosines.
+    """
     item_class = Line
 
     def planes_with(self, other):
+        """Return the list of Planes resulting from the 
+        intersection of the combination of all lines in 
+        this LineSet with other LineSet like object.
+
+        Parameter:
+            other: A LineSet like object.
+        """
         return self.normalized_cross_with(other).view(PlaneSet)
