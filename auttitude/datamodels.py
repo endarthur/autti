@@ -128,10 +128,6 @@ class Vector(np.ndarray):
     def get_small_circle(self, alpha, step=radians(1.)):
         """Returns a pair of arrays representing points spaced step along
         both small circles with an semi-apical opening of alpha around
-<<<<<<< HEAD
-        this vector."""
-        sc = self.get_great_circle(step)[0].T * sin(alpha) + self[:, None] * cos(
-=======
         this vector.
 
         Parameters:
@@ -140,8 +136,7 @@ class Vector(np.ndarray):
             step: Angular step in radians to generate points around small
             circle.
         """
-        sc = self.great_circle(step)[0].T * sin(alpha) + self[:, None] * cos(
->>>>>>> d3fe9354c2d68966ef7143f575ef87c414cca4ad
+        sc = self.get_great_circle(step)[0].T * sin(alpha) + self[:, None] * cos(
             alpha)
         return sc.T, -sc.T
 
@@ -172,17 +167,12 @@ class Plane(Vector):
     """
 
     def intersection_with(self, other):
-<<<<<<< HEAD
-        """Returns the plane containing both lines."""
-        line = Line(self.cross_with(other))
-=======
         """Returns the line of intersection of this and the other plane.
 
         Parameter:
             other: a Plane like object that will intersect with this object.
         """
-        line = Line(self.cross(other))
->>>>>>> d3fe9354c2d68966ef7143f575ef87c414cca4ad
+        line = Line(self.cross_with(other))
         line_length = line.length
         return line / line_length if line_length > 0 else line
 
@@ -206,17 +196,12 @@ class Line(Vector):
     """
 
     def plane_with(self, other):
-<<<<<<< HEAD
-        """Returns the line of intersection of both planes."""
-        plane = Plane(self.cross_with(other))
-=======
         """Returns the plane containing this and the other line.
 
         Parameter:
             other: a Line like object that will define the returned plane.
         """
         plane = Plane(self.cross(other))
->>>>>>> d3fe9354c2d68966ef7143f575ef87c414cca4ad
         plane_length = plane.length
         return plane / plane_length if plane_length > 0 else plane
 
@@ -338,9 +323,6 @@ class PlaneSet(VectorSet):
     item_class = Plane
 
     def intersection_with(self, other):
-<<<<<<< HEAD
-        return self.normalized_cross_with(other).view(LineSet)
-=======
         """Returns the intersection of all combinations of 
         planes in this set with the planes in other set as a
         list of lines defined as a VectorSet.
@@ -348,8 +330,7 @@ class PlaneSet(VectorSet):
         Parameter:
             other: A PlaneSet like object.
         """
-        return self.normalized_cross(other).view(LineSet)
->>>>>>> d3fe9354c2d68966ef7143f575ef87c414cca4ad
+        return self.normalized_cross_with(other).view(LineSet)
 
     @property
     def attitude(self):
