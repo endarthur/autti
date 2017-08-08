@@ -89,7 +89,7 @@ class SphericalStatistics(object):
         self.resultant_length = self.resultant_vector.length
         self.mean_resultant_length = self.resultant_length / n
 
-        self.resultant_vector_attitude = self.resultant_vector.to_attitude
+        self.resultant_vector_attitude = self.resultant_vector.attitude
         self.fisher_k = (n - 1) / (n - self.resultant_length)
 
         direction_tensor = np.dot(np.transpose(data), data) / n

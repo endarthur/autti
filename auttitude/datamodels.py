@@ -96,7 +96,7 @@ class Vector(np.ndarray):
         """Retuns a pair of arrays representing points spaced step along
         both small circles with an semi-apical opening of alpha around
         this vector."""
-        sc = self.great_circle(step)[0].T * sin(alpha) + self[:, None] * cos(
+        sc = self.get_great_circle(step)[0].T * sin(alpha) + self[:, None] * cos(
             alpha)
         return sc.T, -sc.T
 
@@ -105,7 +105,7 @@ class Vector(np.ndarray):
         between both vectors."""
         normal = self.rejection_matrix.dot(other)
         normal /= sqrt(normal.dot(normal))
-        theta_range = np.arange(0, self.angle(other), step)
+        theta_range = np.arange(0, self.angle_with(other), step)
         sin_range = np.sin(theta_range)
         cos_range = np.cos(theta_range)
         return (self * cos_range[:, None] + normal * sin_range[:, None]),
@@ -114,7 +114,7 @@ class Vector(np.ndarray):
 class Plane(Vector):
     def intersection_with(self, other):
         """Returns the plane containing both lines."""
-        line = Line(self.cross(other))
+        line = Line(self.cross_with(other))
         line_length = line.length
         return line / line_length if line_length > 0 else line
 
@@ -131,7 +131,7 @@ class Plane(Vector):
 class Line(Vector):
     def plane_with(self, other):
         """Returns the line of intersection of both planes."""
-        plane = Plane(self.cross(other))
+        plane = Plane(self.cross_with(other))
         plane_length = plane.length
         return plane / plane_length if plane_length > 0 else plane
 
@@ -210,7 +210,7 @@ class PlaneSet(VectorSet):
     item_class = Plane
 
     def intersection_with(self, other):
-        return self.normalized_cross(other).view(LineSet)
+        return self.normalized_cross_with(other).view(LineSet)
 
     @property
     def attitude(self):
