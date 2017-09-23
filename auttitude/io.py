@@ -10,11 +10,21 @@ _DIP_PATTERN = re.compile(r'([0-9.]*)([NESW]*).*')
 
 
 def process_dip(dip_value):
+    """
+    Parse dip values from string or float. Dip is defined as float number
+    or string containing a number followed by two characters indicating the
+    quadrant of dip that must match one of NE, SE, SW or NW.
+    
+    Returns the dip value and quadrant.
+    
+    Parameters:
+        dip_value: A string or float containing dip values to be parsed.
+    """
     try:
         dip = float(dip_value)
         dip_quadrant = ""
     except ValueError:
-        dip, dip_quadrant = _DIP_PATTERN.match(dip_value.upper()).groups()
+        dip, dip_quadrant = _DIP_PATTERN.match(dip_value.strip().upper()).groups()
         dip = float(dip)
         if dip_quadrant not in ("NE", "SE", "SW", "NW"):
             raise ValueError("invalid dip quadrant in: %s" % dip)
@@ -22,11 +32,21 @@ def process_dip(dip_value):
 
 
 def process_direction(direction_value):
+    """
+    Parse direction value from a Direction String or Float value. Floats are
+    angles from North. Direction string encodes an optional North or South (N or
+    S), a float number and finally an optional East or West (E or W).
+    
+    Returns a direction value float number.
+     
+    Parameters:
+        direction_value: a direction string or float value to be parsed.
+    """
     try:
         direction = float(direction_value)
     except ValueError:
         leading, value, trailing = _DIRECTION_PATTERN.match(
-            direction_value.upper()).groups()
+            direction_value.strip().upper()).groups()
         value = float(value)
         if leading == "N":
             if not trailing or trailing == "E":
@@ -44,6 +64,17 @@ def process_direction(direction_value):
 
 
 def translate_attitude(direction, dip, strike=False):
+    """
+    Translate attitude values into proper direction and dip values using special
+    methods for parsing spherical oriented notation for translation.
+    
+    Parameters:
+        direction: A float or string value that can be interpreted as direction.
+                   Please refer to io.parse_direction() method.
+              dip: A float or string value that can be interpreted as dip.
+                   Please refer to io.parse_dip() method.
+           strike: A boolean that consider a right-hand side orientation.
+    """
     dip, dip_quadrant = process_dip(dip)
     direction = process_direction(direction)
     if dip_quadrant:
@@ -75,8 +106,18 @@ def translate_attitude(direction, dip, strike=False):
 
     return direction, dip
 
+
 def dcos_plane(direction_dip):
-    """Converts poles into direction cossines."""  # bad
+    """
+    Converts planes attitude (Azimuth direction and Dip measured from
+    horizontal) representing it as direction cosines of plane pole as used
+    internally by Auttitude. Direction cosine values have norm equal to 1.
+    
+    Parameters:
+        direction_dip: (2,N) iterable elements that contains values of plane
+                       azimuth and dip measured from horizontal of N-planes to be
+                       represented by its poles direction cosine. 
+    """
     dd, d = np.transpose(np.radians(direction_dip))  # dip direction, dip
     return np.array((-np.sin(d)*np.sin(dd),
                      -np.sin(d)*np.cos(dd),
@@ -84,7 +125,15 @@ def dcos_plane(direction_dip):
 
 
 def sphere_plane(dcos_data):
-    """Calculates the attitude of poles direction cossines."""   # bad
+    """
+    Converts attitude of planes represented by its poles direction cosines.
+    Attitudes on those cases are direction measured from North and Dip measured
+    90 degrees further from azimuth direction.
+    
+    Parameters:
+        dcos_data: (3,N) direction cosines iterable element representing N-plane
+                   poles direction cosines.
+    """
     x, y, z = np.transpose(dcos_data)
     sign_z = np.where(z > 0, 1, -1)
     z = np.clip(z, -1., 1.)
@@ -93,8 +142,17 @@ def sphere_plane(dcos_data):
 
 
 def dcos_line(trend_plunge):
-    """Converts the attitude of lines (trend, plunge) into
-    direction cosines."""  # OK?
+    """
+    Converts the attitude of lines (trend, plunge) into direction cosines values
+    as used internally by Auttitude. Direction cosine values have norm equal to
+    1.
+    
+    Parameters:
+        trend_plunge: (2,N) elements iterable object that contains values for
+                      line trend (orientation from North) and plunge (dipping
+                      direction from horizontal) for N-lines to be represented
+                      as directional cosines.
+    """
     tr, pl = np.transpose(np.radians(trend_plunge))  # trend, plunge
     return np.array((np.cos(pl)*np.sin(tr),
                      np.cos(pl)*np.cos(tr),
@@ -102,8 +160,16 @@ def dcos_line(trend_plunge):
 
 
 def dcos_rake(direction_dip_rake):
-    """Converts the attitude of lines (dip direction, dip, rake) into
-    direction cosines."""  # OK?
+    """
+    Convert lines attitude (dip direction, dip and rake) into direction cosine
+    values as used internally by Auttitude. Direction cosine values have norm
+    equal to 1.
+    
+    Parameters:
+        direction_dip_rake: (3,N) iterable elements that contains values for
+                            direction, dip and rake. Dip is measured from 
+                            Horizontal and Rake is measured from direction.
+    """
     dd, d, rk = np.transpose(np.radians(direction_dip_rake))  # trend, plunge
     return np.array((np.sin(rk)*np.cos(d)*np.sin(dd) - np.cos(rk)*np.cos(dd),
                      np.sin(rk)*np.cos(d)*np.cos(dd) + np.cos(rk)*np.sin(dd),
@@ -111,7 +177,14 @@ def dcos_rake(direction_dip_rake):
 
 
 def sphere_line(dcos_data):
-    """Returns the attitude of lines direction cosines."""  # bad
+    """
+    Returns the attitude of lines from its direction cosines. Lines attitude 
+    are defined as trend and plunge values.
+    
+    Parameters:
+        dcos_data: (3,N) direction cosines iterable element representing N-line
+                   direction cosines.
+    """
     x, y, z = np.transpose(dcos_data)
     sign_z = np.where(z > 0, -1, 1)
     z = np.clip(z, -1., 1.)
