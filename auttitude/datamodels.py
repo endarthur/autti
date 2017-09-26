@@ -5,7 +5,7 @@ from math import acos, asin, atan2, cos, degrees, pi, radians, sin, sqrt
 
 import numpy as np
 
-from auttitude.io import sphere_line, sphere_plane
+from auttitude.io import sphere_line, sphere_plane, translate_attitude, dcos_plane, dcos_line
 from auttitude.math import normalized_cross
 from auttitude.stats import DEFAULT_GRID, SphericalStatistics
 
@@ -166,6 +166,15 @@ class Plane(Vector):
         dcos_data: Direction cosines of the dip direction/dip pair.
     """
 
+    @staticmethod
+    def from_attitude(direction, dip, strike = False):
+        """
+        Return a new Plane from direction, dip and strike given.
+        Please refer to translate_attitude method for  parameters description.
+        """
+        dd,d = translate_attitude(direction, dip, strike)
+        return Plane(dcos_plane((dd,d)))
+
     def intersection_with(self, other):
         """Returns the line of intersection of this and the other plane.
 
@@ -175,6 +184,11 @@ class Plane(Vector):
         line = Line(self.cross_with(other))
         line_length = line.length
         return line / line_length if line_length > 0 else line
+
+    @property
+    def rhr_attitude(self):
+        dd, d = self.attitude
+        return (dd - 90) % 360, d
 
     @property
     def attitude(self):
@@ -194,6 +208,14 @@ class Line(Vector):
     Parameters:
         dcos_data: Direction cosines of the line direction/dip.
     """
+    @staticmethod
+    def from_attitude(direction, dip, strike = False):
+        """
+        Return a new Line Object from direction, dip and strike given.
+        Please refer to translate_attitude method for description of parameters.
+        """
+        direction, dip = translate_attitude(direction, dip, strike)
+        return Line(dcos_line((direction, dip)))
 
     def plane_with(self, other):
         """Returns the plane containing this and the other line.
