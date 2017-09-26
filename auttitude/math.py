@@ -20,7 +20,7 @@ def general_plane_intersection(n_a, da, n_b, db):
     l_v = np.cross(n_a, n_b)
     norm_l = sqrt(l_v.dot(l_v))
     if norm_l == 0:
-        return None
+        return None, None
     else:
         l_v /= norm_l
     aa = n_a.dot(n_a)
