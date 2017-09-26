@@ -79,6 +79,75 @@ class SphericalGrid(object):
         return result
 
 
+class CircularGrid(object):
+    def __init__(self, spacing=1., offset=0., **kwargs):
+        self.spacing = spacing
+        self.grid = self.build_grid(spacing, offset)
+
+    def build_grid(self, spacing, offset=0., from_=0., to_=2 * pi):
+        s = radians(spacing)
+        o = radians(offset)
+        theta_range = np.arange(o, 2 * pi + o, s)
+        theta_range = theta_range[np.logical_and(theta_range >= from_,\
+                                                 theta_range <= to_)]
+        return np.array((np.sin(theta_range), np.cos(theta_range))).T
+
+    def cdis(self, data, nodes=None, axial=False):
+        nodes = self.grid if nodes is None else nodes
+        d = np.clip(
+            np.dot(nodes, np.transpose(data)) / np.linalg.norm(data, axis=1),
+            -1, 1)
+        if axial:
+            d = np.abs(d)
+        return d
+
+    def count(self,
+              data,
+              aperture=None,
+              axial=False,
+              spacing=None,
+              offset=0,
+              nodes=None,
+              data_weight=None):
+        aperture = radians(aperture) / 2. if aperture is not None else radians(
+            self.spacing) / 2.
+        if nodes is None:
+            nodes = self.grid if spacing is None else self.build_grid(
+                spacing, offset)
+        spacing = radians(
+            self.spacing) / 2 if spacing is None else radians(spacing) / 2
+        c = cos(aperture)
+        n = data.shape[0]
+        data_weight = np.ones(n) if data_weight is None else data_weight
+        return np.where(self.cdis(data, nodes, axial=axial) >= c,\
+                        data_weight, 0.).sum(axis=1)[:,None]/data_weight.sum()
+
+    def count_munro(self,
+                    data,
+                    weight=.9,
+                    aperture=10.,
+                    axial=False,
+                    spacing=None,
+                    offset=0,
+                    nodes=None,
+                    data_weight=None):
+        spacing = 1 if spacing is None else spacing
+        if nodes is None:
+            nodes = self.grid if spacing is None else self.build_grid(
+                spacing, offset)
+        d = self.cdis(data, nodes, axial=axial)
+        aperture = radians(aperture) / 2. if aperture is not None else radians(
+            self.spacing) / 2.
+        c = cos(aperture)
+        theta = np.arccos(d) * pi / aperture
+        data_weight = np.ones(
+            data.shape[0]) if data_weight is None else data_weight
+        upscale = 1. + 2. * np.power(
+            weight, np.linspace(0., aperture, radians(spacing))).sum()
+        return (np.where(d >= c, data_weight, 0) * np.power(weight, theta)
+                ).sum(axis=1)[:, None] * upscale / data_weight.sum()
+
+
 class SphericalStatistics(object):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, data):  # Should this really be built by default?
