@@ -37,13 +37,13 @@ def small_circle_intersection(axis_a, angle_a, axis_b, angle_b):
     line = general_plane_intersection(axis_a, cos(angle_a),
                                       axis_b, cos(angle_b))
     if not line:
-        return None
+        return ()
     l_v, l_0 = line
     # https://en.wikipedia.org/wiki/Line%E2%80%93sphere_intersection
     b = 2*l_v.dot(l_0)
     delta = b*b - 4*(l_0.dot(l_0) - 1)
     if delta < 0:
-        return None
+        return ()
     elif delta == 0:
         return -b/2.,
     else:
