@@ -12,16 +12,25 @@ from auttitude.io import dcos_line, sphere_line
 # maybe add option to build grid from projecting regular
 # plane grid to sphere
 class SphericalGrid(object):
+    """
+    This class represents an quasi-regular spherical grid with a given distance
+    between nodes.
+
+    Creates a hemi-spherical counting grid by tesselation.
+
+        Parameters:
+            node_spacing: Distance between nodes in degrees.
+
+    """
     def __init__(self, node_spacing=2.5):
-        """Creates a hemi-spherical counting grid by tesselation"""
         nodes = [(0., 90.)]
         spacing = radians(node_spacing)
         for phi in np.arange(node_spacing, 90., node_spacing):
             azimuth_spacing = degrees(2 * asin(
                 (sin(spacing / 2) / sin(radians(phi)))))
-            for theta in np.arange(0., 360., azimuth_spacing):
+            for theta in np.linspace(0., 360. - azimuth_spacing, 360. // azimuth_spacing):
                 nodes.append((theta + phi + node_spacing / 2, 90. - phi))
-                nodes.append((theta + phi + node_spacing / 2, phi - 90.))
+                nodes.append((theta - 180 + phi + node_spacing / 2, phi - 90.))
         for theta in np.arange(0., 360., node_spacing):
             nodes.append(((theta + 90. + node_spacing / 2) % 360., 0.))
         self.node_attitudes = nodes
