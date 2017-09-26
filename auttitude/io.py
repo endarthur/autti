@@ -60,6 +60,9 @@ def process_direction(direction_value):
                 direction = 180 + value
             elif not trailing:
                 raise ValueError("Invalid direction: %s" % direction)
+        else:
+            raise ValueError("Invalid direction: %s" % direction)
+            # should these methods be more or less permissive>?
     return direction
 
 
