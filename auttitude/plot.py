@@ -210,7 +210,7 @@ class ProjectionPlot(object):
             self.clear_diagram()
         else:
             self.axis = axis
-        self.primitive = None
+            self.clear_diagram()
 
     def clear_diagram(self):
         """Clears the plot area and plot the primitive."""
