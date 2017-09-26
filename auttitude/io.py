@@ -15,6 +15,9 @@ def process_dip(dip_value):
     or string containing a number followed by two characters indicating the
     quadrant of dip that must match one of NE, SE, SW or NW.
     
+    Quadrant of dip should be combined with with direction for proper 
+    interpretation of attitude. Please refer to the translate_attitude() method.
+    
     Returns the dip value and quadrant.
     
     Parameters:
@@ -34,8 +37,9 @@ def process_dip(dip_value):
 def process_direction(direction_value):
     """
     Parse direction value from a Direction String or Float value. Floats are
-    angles from North. Direction string encodes an optional North or South (N or
-    S), a float number and finally an optional East or West (E or W).
+    angles from North in clock-wise direction. Direction string encodes an 
+    North or South (N or S), a float number and finally an optional East or West
+    (E or W).
     
     Returns a direction value float number.
      
@@ -69,14 +73,22 @@ def process_direction(direction_value):
 def translate_attitude(direction, dip, strike=False):
     """
     Translate attitude values into proper direction and dip values using special
-    methods for parsing spherical oriented notation for translation.
+    methods for parsing spherical oriented notation for translation. Inside
+    Auttitude dip is measured along direction unless stated (see strike option).
     
     Parameters:
         direction: A float or string value that can be interpreted as direction.
                    Please refer to io.parse_direction() method.
+
               dip: A float or string value that can be interpreted as dip.
                    Please refer to io.parse_dip() method.
-           strike: A boolean that consider a right-hand side orientation.
+
+           strike: If strike is true, this means that the direction GIVEN is not 
+                   the direction of dipping, but, direction should be corrected
+                   using the dipping quadrant or, if dipping quadrant is no given
+                   should use the right-hand-rule meaning that attitude
+                   direction (or direction of dipping) is 90 degrees further
+                   (clock-wise) than indicated direction.
     """
     dip, dip_quadrant = process_dip(dip)
     direction = process_direction(direction)
@@ -112,9 +124,10 @@ def translate_attitude(direction, dip, strike=False):
 
 def dcos_plane(direction_dip):
     """
-    Converts planes attitude (Azimuth direction and Dip measured from
-    horizontal) representing it as direction cosines of plane pole as used
-    internally by Auttitude. Direction cosine values have norm equal to 1.
+    Converts planes attitude (direction and dip measured from
+    horizontal along direction) representing it as direction cosines of plane
+    pole as used internally by Auttitude. Direction cosine values have norm
+    equal to 1.
     
     Parameters:
         direction_dip: (2,N) iterable elements that contains values of plane
@@ -127,21 +140,27 @@ def dcos_plane(direction_dip):
                      -np.cos(d))).T
 
 
-def sphere_plane(dcos_data):
+def sphere_plane(dcos_data, rhr=False):
     """
-    Converts attitude of planes represented by its poles direction cosines.
+    Converts to attitude of planes represented by its poles direction cosines.
     Attitudes on those cases are direction measured from North and Dip measured
-    90 degrees further from azimuth direction.
+    along direction unless rhr is set to True.
     
     Parameters:
         dcos_data: (3,N) direction cosines iterable element representing N-plane
                    poles direction cosines.
+
+              rhr: Boolean indicating that direction should be corrected
+                   considering the right-hand-rule.
     """
     x, y, z = np.transpose(dcos_data)
     sign_z = np.where(z > 0, 1, -1)
     z = np.clip(z, -1., 1.)
-    return np.array((np.degrees(np.arctan2(sign_z*x, sign_z*y)) % 360,
-                     np.degrees(np.arccos(np.abs(z))))).T
+    
+    corr = 90.0 if rhr else 0.0
+    return np.array((
+                     ((np.degrees(np.arctan2(sign_z*x, sign_z*y)) - corr) % 360),
+                      np.degrees(np.arccos(np.abs(z))))).T
 
 
 def dcos_line(trend_plunge):
@@ -171,7 +190,8 @@ def dcos_rake(direction_dip_rake):
     Parameters:
         direction_dip_rake: (3,N) iterable elements that contains values for
                             direction, dip and rake. Dip is measured from 
-                            Horizontal and Rake is measured from direction.
+                            Horizontal along Direction and Rake is measured
+                            from direction.
     """
     dd, d, rk = np.transpose(np.radians(direction_dip_rake))  # trend, plunge
     return np.array((np.sin(rk)*np.cos(d)*np.sin(dd) - np.cos(rk)*np.cos(dd),
