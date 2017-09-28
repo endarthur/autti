@@ -27,7 +27,8 @@ def process_dip(dip_value):
         dip = float(dip_value)
         dip_quadrant = ""
     except ValueError:
-        dip, dip_quadrant = _DIP_PATTERN.match(dip_value.strip().upper()).groups()
+        dip, dip_quadrant = _DIP_PATTERN.match(
+            dip_value.strip().upper()).groups()
         dip = float(dip)
         if dip_quadrant not in ("NE", "SE", "SW", "NW"):
             raise ValueError("invalid dip quadrant in: %s" % dip)
@@ -90,32 +91,81 @@ def translate_attitude(direction, dip, strike=False):
                    direction (or direction of dipping) is 90 degrees further
                    (clock-wise) than indicated direction.
     """
+    # Should the error messages be more verbose and explicitly say
+    # why are they errors? Maybe yes.
+    base_direction, base_dip = direction, dip
     dip, dip_quadrant = process_dip(dip)
     direction = process_direction(direction)
     if dip_quadrant:
         direction = direction % 180.
-        if 0 <= direction < 90.:
+        if 0 < direction < 90.:
             if strike:
                 if dip_quadrant == "SE":
                     direction = direction + 90.
                 elif dip_quadrant == "NW":
                     direction = direction + 270.
+                else:
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
             else:
                 if dip_quadrant == "NE":
                     pass  # direction = direction
                 elif dip_quadrant == "SW":
                     direction = direction + 180.
-        else:  # 90 <= direction < 180
+                else:
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
+        elif 90. < direction < 180.:  # 90 <= direction < 180
             if strike:
                 if dip_quadrant == "NE":
                     direction = direction - 90.
                 elif dip_quadrant == "SW":
                     direction = direction + 90.
+                else:
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
             else:
                 if dip_quadrant == "SE":
                     pass  # direction = direction
                 elif dip_quadrant == "NW":
                     direction = direction + 180.
+                else:
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
+        elif direction == 0.:
+            if strike:
+                if "E" in dip_quadrant:
+                    direction = 90.
+                elif "W" in dip_quadrant:
+                    direction = 270.
+                else:  # these else branches might be unreachable, check
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
+            else:
+                if "N" in dip_quadrant:
+                    direction = 0.
+                elif "S" in dip_quadrant:
+                    direction = 180.
+                else:
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
+        elif direction == 90.:
+            if strike:
+                if "N" in dip_quadrant:
+                    direction = 0.
+                elif "S" in dip_quadrant:
+                    direction = 180.
+                else:
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
+            else:
+                if "E" in dip_quadrant:
+                    direction = 90.
+                elif "W" in dip_quadrant:
+                    direction = 270.
+                else:
+                    raise ValueError("Invalid attitude: {}/{}".format(
+                        base_direction, base_dip))
     elif strike:  # Right Hand Rule
         direction = (direction + 90.) % 360.
 
@@ -135,8 +185,7 @@ def dcos_plane(direction_dip):
                        represented by its poles direction cosine. 
     """
     dd, d = np.transpose(np.radians(direction_dip))  # dip direction, dip
-    return np.array((-np.sin(d)*np.sin(dd),
-                     -np.sin(d)*np.cos(dd),
+    return np.array((-np.sin(d) * np.sin(dd), -np.sin(d) * np.cos(dd),
                      -np.cos(d))).T
 
 
@@ -156,11 +205,11 @@ def sphere_plane(dcos_data, rhr=False):
     x, y, z = np.transpose(dcos_data)
     sign_z = np.where(z > 0, 1, -1)
     z = np.clip(z, -1., 1.)
-    
+
     corr = 90.0 if rhr else 0.0
-    return np.array((
-                     ((np.degrees(np.arctan2(sign_z*x, sign_z*y)) - corr) % 360),
-                      np.degrees(np.arccos(np.abs(z))))).T
+    return np.array(
+        (((np.degrees(np.arctan2(sign_z * x, sign_z * y)) - corr) % 360),
+         np.degrees(np.arccos(np.abs(z))))).T
 
 
 def dcos_line(trend_plunge):
@@ -176,8 +225,7 @@ def dcos_line(trend_plunge):
                       as directional cosines.
     """
     tr, pl = np.transpose(np.radians(trend_plunge))  # trend, plunge
-    return np.array((np.cos(pl)*np.sin(tr),
-                     np.cos(pl)*np.cos(tr),
+    return np.array((np.cos(pl) * np.sin(tr), np.cos(pl) * np.cos(tr),
                      -np.sin(pl))).T
 
 
@@ -194,9 +242,10 @@ def dcos_rake(direction_dip_rake):
                             from direction.
     """
     dd, d, rk = np.transpose(np.radians(direction_dip_rake))  # trend, plunge
-    return np.array((np.sin(rk)*np.cos(d)*np.sin(dd) - np.cos(rk)*np.cos(dd),
-                     np.sin(rk)*np.cos(d)*np.cos(dd) + np.cos(rk)*np.sin(dd),
-                     -np.sin(rk)*np.sin(d))).T
+    return np.array(
+        (np.sin(rk) * np.cos(d) * np.sin(dd) - np.cos(rk) * np.cos(dd),
+         np.sin(rk) * np.cos(d) * np.cos(dd) + np.cos(rk) * np.sin(dd),
+         -np.sin(rk) * np.sin(d))).T
 
 
 def sphere_line(dcos_data):
@@ -211,5 +260,5 @@ def sphere_line(dcos_data):
     x, y, z = np.transpose(dcos_data)
     sign_z = np.where(z > 0, -1, 1)
     z = np.clip(z, -1., 1.)
-    return np.array((np.degrees(np.arctan2(sign_z*x, sign_z*y)) % 360,
+    return np.array((np.degrees(np.arctan2(sign_z * x, sign_z * y)) % 360,
                      np.degrees(np.arcsin(np.abs(z))))).T
