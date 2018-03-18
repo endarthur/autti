@@ -22,6 +22,7 @@ class Vector(np.ndarray):
         are methods to convert attitude data to normalized direction 
         cosines.
     """
+
     def __new__(cls, dcos_data):
         return np.asarray(dcos_data).view(cls)
 
@@ -125,7 +126,7 @@ class Vector(np.ndarray):
         return (self.direction_vector[:, None] * cos_range +
                 self.dip_vector[:, None] * sin_range).T,
 
-    def get_small_circle(self, alpha, step=radians(1.)):
+    def get_small_circle(self, alpha, A=0, B=0, step=radians(1.)):
         """Returns a pair of arrays representing points spaced step along
         both small circles with an semi-apical opening of alpha around
         this vector.
@@ -136,8 +137,14 @@ class Vector(np.ndarray):
             step: Angular step in radians to generate points around small
             circle.
         """
-        sc = self.get_great_circle(step)[0].T * sin(alpha) + self[:, None] * cos(
-            alpha)
+        if A == 0 and B == 0:
+            sc = self.get_great_circle(step)[0].T * sin(
+                alpha) + self[:, None] * cos(alpha)
+        else:
+            theta_range = np.arange(0, 2*pi, step)
+            alpha_ = alpha + A * np.cos(2*theta_range) + B * np.sin(2*theta_range)
+            sc = self.get_great_circle(step)[0].T * np.sin(
+                alpha_) + self[:, None] * np.cos(alpha_)
         return sc.T, -sc.T
 
     def arc_to(self, other, step=radians(1.)):
@@ -167,13 +174,13 @@ class Plane(Vector):
     """
 
     @staticmethod
-    def from_attitude(direction, dip, strike = False):
+    def from_attitude(direction, dip, strike=False):
         """
         Return a new Plane from direction, dip and strike given.
         Please refer to translate_attitude method for  parameters description.
         """
-        dd,d = translate_attitude(direction, dip, strike)
-        return Plane(dcos_plane((dd,d)))
+        dd, d = translate_attitude(direction, dip, strike)
+        return Plane(dcos_plane((dd, d)))
 
     def intersection_with(self, other):
         """Returns the line of intersection of this and the other plane.
@@ -208,8 +215,9 @@ class Line(Vector):
     Parameters:
         dcos_data: Direction cosines of the line direction/dip.
     """
+
     @staticmethod
-    def from_attitude(direction, dip, strike = False):
+    def from_attitude(direction, dip, strike=False):
         """
         Return a new Line Object from direction, dip and strike given.
         Please refer to translate_attitude method for description of parameters.
