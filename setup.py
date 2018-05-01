@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="auttitude",
-    version="0.1.0",
+    version="0.1.0alpha",
     packages=find_packages(),
 
     install_requires=[
@@ -19,7 +19,7 @@ setup(
     license="MIT",
     keywords="geology attitude stereonet projection structural",
     url="https://github.com/endarthur/autti",
-    dowload_url="https://github.com/endarthur/autti/archive/v0.1.0.tar.gz",
+    dowload_url="https://github.com/endarthur/autti/archive/v0.1.0alpha.tar.gz",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
