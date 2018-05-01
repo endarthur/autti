@@ -8,6 +8,7 @@ try:
     from collections import ChainMap
 except ImportError:
     from itertools import chain
+
     def ChainMap(*args):
         return dict(chain(*map(lambda d: d.items(), reversed(args))))
 from inspect import isclass
