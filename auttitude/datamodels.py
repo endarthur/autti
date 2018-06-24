@@ -5,7 +5,8 @@ from math import acos, asin, atan2, cos, degrees, pi, radians, sin, sqrt
 
 import numpy as np
 
-from auttitude.io import sphere_line, sphere_plane, translate_attitude, dcos_plane, dcos_line
+from auttitude.io import sphere_line, sphere_plane, translate_attitude,\
+    dcos_plane, dcos_line
 from auttitude.math import normalized_cross
 from auttitude.stats import DEFAULT_GRID, SphericalStatistics
 
@@ -26,16 +27,22 @@ class Vector(np.ndarray):
     def __new__(cls, dcos_data):
         return np.asarray(dcos_data).view(cls)
 
-    def angle_with(self, other):
+    def angle_with(self, other, precise=False):
         """Returns the angle (in radians) between both vectors using
-        the dot product between them.
+        the dot product between them. Optionally, if precise is set to True,
+        calculates the angle using the arctangent of the ratio of the
+        magnitude of the cross and dot products between the vectors.
 
         Parameter:
             other: A Vector like object.
+            precise: whether to use arccosine or arctangent (defaults False)
         """
-        self_length = self.length
-        other_length = sqrt(other.dot(other))
-        return acos(self.dot(other) / (self_length * other_length))
+        if not precise:
+            self_length = self.length
+            other_length = sqrt(other.dot(other))
+            return acos(self.dot(other) / (self_length * other_length))
+        else:
+            return atan2(self.cross_with(other), self.dot(other))
 
     def cross_with(self, other):
         """Returns the cross product between both vectors.
@@ -319,17 +326,18 @@ class VectorSet(np.ndarray):
                 i += 1
         return VectorSet(vectors)
 
-    def angle_with(self, other):
+    def angle_with(self, other, precise=False):
         """Returns the angles matrix between this Spherical Data and an
-        (n, 3) array-like
+        (n, 3) array-like.
 
         Parameter:
             other: A VectorSet like object.
+            precise: whether to use arccosine or arctangent (defaults False)
         """
         angles = np.zeros((len(self), len(other)))
         for i, self_vector in enumerate(self):
             for j, other_vector in enumerate(other):
-                angles[i, j] = self_vector.angle_with(other_vector)
+                angles[i, j] = self_vector.angle_with(other_vector, precise)
         return angles
 
     def get_great_circle(self, step=radians(1.)):
