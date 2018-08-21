@@ -14,12 +14,13 @@ def process_dip(dip_value):
     Parse dip values from string or float. Dip is defined as float number
     or string containing a number followed by two characters indicating the
     quadrant of dip that must match one of NE, SE, SW or NW.
-    
-    Quadrant of dip should be combined with with direction for proper 
-    interpretation of attitude. Please refer to the translate_attitude() method.
-    
+
+    Quadrant of dip should be combined with with direction for proper
+    interpretation of attitude. Please refer to the translate_attitude()
+    method.
+
     Returns the dip value and quadrant.
-    
+
     Parameters:
         dip_value: A string or float containing dip values to be parsed.
     """
@@ -262,3 +263,37 @@ def sphere_line(dcos_data):
     z = np.clip(z, -1., 1.)
     return np.array((np.degrees(np.arctan2(sign_z * x, sign_z * y)) % 360,
                      np.degrees(np.arcsin(np.abs(z))))).T
+
+
+def dcos_circular(direction, axial=False):
+    """
+    Convert circular attitudes (direction) into direction cosine
+    values as used internally by Auttitude. Direction cosine values have norm
+    equal to 1.
+    
+    Parameters:
+        direction: (N)  iterable elements that contains values for
+                        direction. Dip is measured from 
+                        North clockwise.
+        Axial: bool     Whether data is axial or vectorial. Defaults False.
+    """
+    if axial:
+        direction = 2 * direction % 360.
+    d = np.radians(direction)
+    return np.array((np.sin(d), np.cos(d), np.zeros_like(d))).T
+
+
+def sphere_circular(dcos_data, axial=False):
+    """
+    Returns the attitude of circular data from its direction cosines. Circular
+    attitude are defined as directions.
+    
+    Parameters:
+        dcos_data: (3,N) direction cosines iterable element representing
+                    N-circular direction cosines.
+    """
+    x, y = np.transpose(dcos_data)[:2]
+    d = np.degrees(np.arctan2(x, y))
+    if axial:
+        direction = d / 2.
+    return direction
