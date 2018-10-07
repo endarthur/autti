@@ -91,10 +91,7 @@ ENV/
 # vscode
 .vscode/
 
-<<<<<<< HEAD
 # pycharm
 .idea/
-=======
 # mypy
 .mypy_cache/
->>>>>>> 2fdf31453905d9d2fbe41c634752177397a87d5a
