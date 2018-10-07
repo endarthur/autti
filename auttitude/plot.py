@@ -211,9 +211,12 @@ class ProjectionPlot(object):
         print(projected_polygon.shape)
         first = projected_polygon[0]
         last = projected_polygon[-1]
-        print(first, last)
+        mid = (first + last)/2
+        mid = mid/np.linalg.norm(mid)
+        if np.dot(first, last) == 0.0:
+            mid = np.array([first[1], -first[0]])
         if np.linalg.norm(first) > 1.0 and np.linalg.norm(last) > 1.0:
-            return np.vstack([projected_polygon, [2*last, 2*first]])
+            return np.vstack([projected_polygon, [2*last, 3*mid, 2*first]])
         return projected_polygon
 
 
