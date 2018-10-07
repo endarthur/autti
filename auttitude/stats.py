@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import
-from math import asin, cos, degrees, log, pi, radians, sin, sinh
+from math import asin, cos, degrees, log, pi, radians, sin, sinh, sqrt
 
 import numpy as np
 
@@ -157,6 +157,41 @@ class CircularGrid(object):
                 ).sum(axis=1)[:, None] * upscale / data_weight.sum()
 
 
+class CircularStatistics(object):
+    # pylint: disable=too-many-instance-attributes
+    def __init__(self, data):  # Should this really be built by default?
+        n = len(data)
+        self.resultant_vector = at.datamodels.Vector(np.sum(data, axis=0))
+        self.mean_resultant_vector = self.resultant_vector / n
+        self.mean_vector = self.resultant_vector / self.resultant_vector.length
+        self.resultant_length = self.resultant_vector.length
+        self.mean_resultant_length = self.resultant_length / n
+
+        self.resultant_vector_attitude = self.resultant_vector.attitude
+
+        self.circular_variance = 1 - self.mean_resultant_length
+        self.circular_standard_deviation = sqrt(
+            -2 * log(1 - self.circular_variance))
+        # self.circular_mean_direction_axial, self.circular_confidence_axial =\
+        #     self.estimate_circular_confidence(axial=True)
+        # self.circular_mean_direction, self.circular_confidence =\
+        #     self.estimate_circular_confidence(axial=False)
+
+        self.fisher_k = (n - 1) / (n - self.resultant_length)
+
+        direction_tensor = np.dot(np.transpose(data), data) / n
+        eigenvalues, eigenvectors = np.linalg.eigh(direction_tensor)
+        eigenvalues_order = (-eigenvalues).argsort()
+
+        self.eigenvalues = eigenvalues[eigenvalues_order]
+
+        self.eigenvectors = [
+            at.datamodels.Vector(eigenvector)
+            for eigenvector in eigenvectors[:, eigenvalues_order].T
+        ]
+        self.eigenvectors_attitude = sphere_line(self.eigenvectors)
+
+
 class SphericalStatistics(object):
     # pylint: disable=too-many-instance-attributes
     def __init__(self, data):  # Should this really be built by default?
@@ -184,6 +219,7 @@ class SphericalStatistics(object):
         ]
         self.eigenvectors_attitude = sphere_line(self.eigenvectors)
 
+        # Check for divide by zero on stats?
         # From Vollmer 1990
         self.vollmer_P = (lambda1 - lambda2) / lambda_sum
         self.vollmer_G = 2 * (lambda2 - lambda3) / lambda_sum
