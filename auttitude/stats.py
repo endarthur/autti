@@ -97,7 +97,7 @@ class CircularGrid(object):
         s = radians(spacing)
         o = radians(offset)
         theta_range = np.arange(o, 2 * pi + o, s)
-        theta_range = theta_range[np.logical_and(theta_range >= from_,\
+        theta_range = theta_range[np.logical_and(theta_range >= from_,
                                                  theta_range <= to_)]
         return np.array((np.sin(theta_range), np.cos(theta_range))).T
 
