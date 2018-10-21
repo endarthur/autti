@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import abc
+
 # http://treyhunner.com/2016/02/how-to-merge-dictionaries-in-python/
 try:
     from collections import ChainMap
@@ -18,7 +19,7 @@ from math import cos, pi, radians, sin, sqrt
 
 import numpy as np
 from matplotlib import patheffects
-from matplotlib.collections import LineCollection
+from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.lines import Line2D
 from matplotlib.mlab import griddata
 from matplotlib.patches import Circle, FancyArrowPatch
@@ -53,7 +54,7 @@ class ProjectionBase(object):
             x, y, z = self.R.dot(np.transpose(data))
         else:
             x, y, z = np.transpose(data)
-        d = 1. / np.sqrt(x * x + y * y + z * z)
+        d = 1.0 / np.sqrt(x * x + y * y + z * z)
         if invert_positive:
             c = np.where(z > 0, -1, 1) * d
             return c * x, c * y, c * z
@@ -86,9 +87,9 @@ class EqualAngle(ProjectionBase):
 
         Inverts the projection of a point from the unit sphere
         to a plane using stereographic projection"""
-        x = 2. * X / (1. + X * X + Y * Y)
-        y = 2. * Y / (1. + X * X + Y * Y)
-        z = (-1. + X * X + Y * Y) / (1. + X * X + Y * Y)
+        x = 2.0 * X / (1.0 + X * X + Y * Y)
+        y = 2.0 * Y / (1.0 + X * X + Y * Y)
+        z = (-1.0 + X * X + Y * Y) / (1.0 + X * X + Y * Y)
         return x, y, z
 
 
@@ -121,16 +122,22 @@ class EqualArea(ProjectionBase):
         that the projected radius of the sphere was shrunk to 1 from
         sqrt(2)."""
         X, Y = X * sqrt(2), Y * sqrt(2)
-        x = np.sqrt(1 - (X * X + Y * Y) / 4.) * X
-        y = np.sqrt(1 - (X * X + Y * Y) / 4.) * Y
-        z = -1. + (X * X + Y * Y) / 2
+        x = np.sqrt(1 - (X * X + Y * Y) / 4.0) * X
+        y = np.sqrt(1 - (X * X + Y * Y) / 4.0) * Y
+        z = -1.0 + (X * X + Y * Y) / 2
         return x, y, z
 
 
 class ProjectionPlot(object):
-    point_defaults = {'marker': 'o', 'c': '#000000', 'ms': 3.0}
+    point_defaults = {"marker": "o", "c": "#000000", "ms": 3.0}
 
     line_defaults = {"linewidths": 0.8, "colors": "#4D4D4D", "linestyles": "-"}
+
+    polygon_defaults = {
+        "linewidths": 0.8,
+        "edgecolors": "#4D4D4D",
+        "facecolors": "#FF8000",
+    }
 
     contour_defaults = {"cmap": "Reds", "linestyles": "-", "antialiased": True}
 
@@ -139,23 +146,23 @@ class ProjectionPlot(object):
     net_gc_defaults = {
         "linewidths": 0.25,
         "colors": "#808080",
-        "linestyles": "-"
+        "linestyles": "-",
     }
 
     net_sc_defaults = {
         "linewidths": 0.25,
         "colors": "#808080",
-        "linestyles": "-"
+        "linestyles": "-",
     }
 
     text_defaults = {
         "family": "sans-serif",
         "size": "x-small",
-        "horizontalalignment": "center"
+        "horizontalalignment": "center",
     }
 
     @staticmethod
-    def _clip_lines(data, z_tol=.1):
+    def _clip_lines(data, z_tol=0.1):
         """segment point pairs between inside and outside of primitive, for
         avoiding spurious lines when plotting circles."""
         z = np.transpose(data)[2]
@@ -173,31 +180,83 @@ class ProjectionPlot(object):
         return results
 
     @staticmethod
-    def _net_grid(gc_spacing=10., sc_spacing=10., n=360, clean_caps=True):
-        theta = np.linspace(0., 2 * pi, n)
+    def _join_segments(segments, c_tol=radians(1.0)):
+        """segment point pairs between inside and outside of primitive, for
+        avoiding spurious lines when plotting circles."""
+        all_joined = False
+        while not all_joined and len(segments) > 1:
+            all_joined = True
+            segment = segments.pop(0)
+            if abs(segment[-1].angle_with(segments[0][0])) < c_tol:
+                segment.extend(segments.pop(0))
+                all_joined = False
+            elif abs(segment[0].angle_with(segments[0][-1])) < c_tol:
+                segment_b = segments.pop(0)
+                segment_b.extend(segment)
+                segment = segment_b
+                all_joined = False
+            elif abs(segment[-1].angle_with(segments[0][-1])) < c_tol:
+                segment.extend(reversed(segments.pop(0)))
+                all_joined = False
+            elif abs(segment[0].angle_with(segments[0][0])) < c_tol:
+                segment_b = segments.pop(0)
+                segment_b.extend(reversed(segment))
+                segment = segment_b
+                all_joined = False
+            segments.append(segment)
+        return segments
+
+    @staticmethod
+    def _close_polygon(projected_polygon):
+        print(projected_polygon.shape)
+        first = projected_polygon[0]
+        last = projected_polygon[-1]
+        mid = (first + last)/2
+        mid = mid/np.linalg.norm(mid)
+        if np.dot(first, last) == 0.0:
+            mid = np.array([first[1], -first[0]])
+        if np.linalg.norm(first) > 1.0 and np.linalg.norm(last) > 1.0:
+            return np.vstack([projected_polygon, [2*last, 3*mid, 2*first]])
+        return projected_polygon
+
+
+
+    @staticmethod
+    def _net_grid(gc_spacing=10.0, sc_spacing=10.0, n=360, clean_caps=True):
+        theta = np.linspace(0.0, 2 * pi, n)
         gc_spacing, sc_spacing = radians(gc_spacing), radians(sc_spacing)
         if clean_caps:
-            theta_gc = np.linspace(0. + sc_spacing, pi - sc_spacing, n)
+            theta_gc = np.linspace(0.0 + sc_spacing, pi - sc_spacing, n)
         else:
-            theta_gc = np.linspace(0., pi, n)
-        gc_range = np.arange(0., pi + gc_spacing, gc_spacing)
+            theta_gc = np.linspace(0.0, pi, n)
+        gc_range = np.arange(0.0, pi + gc_spacing, gc_spacing)
         gc_range = np.hstack((gc_range, -gc_range))
-        sc_range = np.arange(0., pi + sc_spacing, sc_spacing)
+        sc_range = np.arange(0.0, pi + sc_spacing, sc_spacing)
         i, j, k = np.eye(3)
         ik_circle = i[:, None] * np.sin(theta) + k[:, None] * np.cos(theta)
-        great_circles = [(np.array(
-            (cos(alpha), .0, -sin(alpha)))[:, None] * np.sin(theta_gc)
-                          + j[:, None] * np.cos(theta_gc)).T
-                         for alpha in gc_range]
-        small_circles = [(ik_circle * sin(alpha) + j[:, None] * cos(alpha)).T
-                         for alpha in sc_range]
+        great_circles = [
+            (
+                np.array((cos(alpha), 0.0, -sin(alpha)))[:, None]
+                * np.sin(theta_gc)
+                + j[:, None] * np.cos(theta_gc)
+            ).T
+            for alpha in gc_range
+        ]
+        small_circles = [
+            (ik_circle * sin(alpha) + j[:, None] * cos(alpha)).T
+            for alpha in sc_range
+        ]
         if clean_caps:
             for cap in (0, pi):
                 theta_gc = np.linspace(cap - sc_spacing, cap + sc_spacing, n)
-                great_circles += [(np.array(
-                    (cos(alpha), .0, -sin(alpha)))[:, None] * np.sin(theta_gc)
-                                   + j[:, None] * np.cos(theta_gc)).T
-                                  for alpha in (0, pi / 2.)]
+                great_circles += [
+                    (
+                        np.array((cos(alpha), 0.0, -sin(alpha)))[:, None]
+                        * np.sin(theta_gc)
+                        + j[:, None] * np.cos(theta_gc)
+                    ).T
+                    for alpha in (0, pi / 2.0)
+                ]
         return great_circles, small_circles
 
     def __init__(self, axis=None, projection=None, rotation=None):
@@ -209,6 +268,7 @@ class ProjectionPlot(object):
             self.projection = projection
         if axis is None:
             from matplotlib import pyplot as plt
+
             self.axis = plt.gca()
             self.clear_diagram()
         else:
@@ -218,7 +278,7 @@ class ProjectionPlot(object):
     def clear_diagram(self):
         """Clears the plot area and plot the primitive."""
         self.axis.cla()
-        self.axis.axis('equal')
+        self.axis.axis("equal")
         self.axis.set_xlim(-1.1, 1.1)
         self.axis.set_ylim(-1.1, 1.1)
         self.axis.set_axis_off()
@@ -230,18 +290,20 @@ class ProjectionPlot(object):
         self.primitive = Circle(
             (0, 0),
             radius=1,
-            edgecolor='black',
+            edgecolor="black",
             fill=False,
-            clip_box='None',
-            label='_nolegend_')
+            clip_box="None",
+            label="_nolegend_",
+        )
         self.axis.add_patch(self.primitive)
         # maybe add a dict for font options and such...
         if self.projection.rotation is None:
-            self.axis.text(0.01, 1.025, 'N', **self.text_defaults)
+            self.axis.text(0.01, 1.025, "N", **self.text_defaults)
             x_cross = [0, 1, 0, -1, 0]
             y_cross = [0, 0, 1, 0, -1]
             self.axis.plot(
-                x_cross, y_cross, 'k+', markersize=8, label='_nolegend_')
+                x_cross, y_cross, "k+", markersize=8, label="_nolegend_"
+            )
 
     def as_points(self, vectors, **kwargs):
         """Plot points on the diagram. Accepts and passes aditional key word
@@ -250,7 +312,7 @@ class ProjectionPlot(object):
         # use the default values if not user input
         # https://stackoverflow.com/a/6354485/1457481
         options = ChainMap({}, kwargs, self.point_defaults)
-        self.axis.plot(X, Y, linestyle='', **options)
+        self.axis.plot(X, Y, linestyle="", **options)
 
     def as_lines(self, lines, **kwargs):
         """plot a list of lines"""
@@ -261,29 +323,56 @@ class ProjectionPlot(object):
         projected_lines = [
             np.transpose(
                 self.projection.direct(
-                    segment, invert_positive=False, rotate=False))
-            for circle in lines for segment in self._clip_lines(
-                np.dot(circle, self.projection.R.T))
+                    segment, invert_positive=False, rotate=False
+                )
+            )
+            for circle in lines
+            for segment in self._join_segments(self._clip_lines(
+                np.dot(circle, self.projection.R.T)
+            ))
         ]
         circle_collection = LineCollection(projected_lines, **options)
         circle_collection.set_clip_path(self.primitive)
         self.axis.add_collection(circle_collection)
 
-    def as_contours(self,
-                    nodes,
-                    count,
-                    n_data,
-                    n_contours=10,
-                    minmax=True,
-                    percentage=True,
-                    contour_mode='fillover',
-                    resolution=250,
-                    **kwargs):
+    def as_polygons(self, polygons, **kwargs):
+        """plot a list of polygons"""
+        # use the default values if not user input
+        # https://stackoverflow.com/a/6354485/1457481
+        options = ChainMap({}, kwargs, self.polygon_defaults)
+        # should change this for better support of huge data
+        projected_polygons = [
+            self._close_polygon(np.transpose(
+                self.projection.direct(
+                    segment, invert_positive=False, rotate=False
+                )
+            ))
+            for circle in polygons
+            for segment in self._join_segments(self._clip_lines(
+                np.dot(circle, self.projection.R.T)
+            ))
+        ]
+        poly_collection = PolyCollection(projected_polygons, **options)
+        poly_collection.set_clip_path(self.primitive)
+        self.axis.add_collection(poly_collection)
+
+    def as_contours(
+        self,
+        nodes,
+        count,
+        n_data,
+        n_contours=10,
+        minmax=True,
+        percentage=True,
+        contour_mode="fillover",
+        resolution=250,
+        **kwargs
+    ):
         """Plot contours of a spherical count. Parameters are the counting
         nodes, the actual counts and the number of data points. Returns the
         matplotlib contour object for creating colorbar."""
         if percentage:
-            count = 100. * count / n_data
+            count = 100.0 * count / n_data
         if minmax:
             intervals = np.linspace(count.min(), count.max(), n_contours)
         else:
@@ -291,17 +380,17 @@ class ProjectionPlot(object):
         xi = yi = np.linspace(-1.1, 1.1, resolution)
         # maybe preselect nodes here on z tolerance
         X, Y = self.projection.direct(nodes, invert_positive=False)
-        zi = griddata(X, Y, count, xi, yi, interp='linear')
+        zi = griddata(X, Y, count, xi, yi, interp="linear")
         # use the default values if not user input
         # https://stackoverflow.com/a/6354485/1457481
         options = ChainMap({}, kwargs, self.contour_defaults)
 
         contour_fill, contour_lines = None, None
-        if contour_mode in ('fillover', 'fill'):
+        if contour_mode in ("fillover", "fill"):
             contour_fill = self.axis.contourf(xi, yi, zi, intervals, **options)
             for collection in contour_fill.collections:
                 collection.set_clip_path(self.primitive)
-        if contour_mode != 'fill':
+        if contour_mode != "fill":
             contour_lines = self.axis.contour(xi, yi, zi, intervals, **options)
             for collection in contour_lines.collections:
                 collection.set_clip_path(self.primitive)
@@ -314,20 +403,25 @@ class ProjectionPlot(object):
         X, Y = self.projection.direct(vector)
         txt = self.axis.text(X, Y, text, **options)
         if border is not None:
-            txt.set_path_effects([
-                patheffects.withStroke(
-                    linewidth=border, foreground=foreground)
-            ])
+            txt.set_path_effects(
+                [
+                    patheffects.withStroke(
+                        linewidth=border, foreground=foreground
+                    )
+                ]
+            )
 
-    def base_net(self,
-                 gc_spacing=10.,
-                 sc_spacing=10.,
-                 n=360,
-                 gc_options=None,
-                 sc_options=None,
-                 clean_caps=True,
-                 plot_cardinal_points=True,
-                 cardinal_options=None):
+    def base_net(
+        self,
+        gc_spacing=10.0,
+        sc_spacing=10.0,
+        n=360,
+        gc_options=None,
+        sc_options=None,
+        clean_caps=True,
+        plot_cardinal_points=True,
+        cardinal_options=None,
+    ):
         gc, sc = self._net_grid(gc_spacing, sc_spacing, n, clean_caps)
         gc_options = {} if gc_options is None else gc_options
         sc_options = {} if sc_options is None else sc_options
@@ -337,11 +431,18 @@ class ProjectionPlot(object):
         sc_options = ChainMap({}, sc_options, self.net_sc_defaults)
         self.as_lines(sc, **sc_options)
 
-        cardinal_options = ChainMap({}, cardinal_options,
-                                    {"verticalalignment": "center"})
+        cardinal_options = ChainMap(
+            {}, cardinal_options, {"verticalalignment": "center"}
+        )
         if plot_cardinal_points and self.projection.rotation is not None:
-            cpoints = np.array(((0.0, 1.0, 0.0), (1.0, 0.0, 0.0),
-                                (0.0, -1., 0.0), (-1., 0.0, 0.0)))
+            cpoints = np.array(
+                (
+                    (0.0, 1.0, 0.0),
+                    (1.0, 0.0, 0.0),
+                    (0.0, -1.0, 0.0),
+                    (-1.0, 0.0, 0.0),
+                )
+            )
             c_rotated = np.dot(cpoints, self.projection.R.T)
             for i, (point, name) in enumerate(zip(c_rotated, "NESW")):
                 if point[2] > 0:
@@ -350,29 +451,35 @@ class ProjectionPlot(object):
                     cpoints[i],
                     name,
                     border=2.0,
-                    foreground='w',
-                    **cardinal_options)
+                    foreground="w",
+                    **cardinal_options
+                )
 
-    def as_arrow_on_pole(self,
-                         planes,
-                         lines,
-                         sense=True,
-                         arrowsize=radians(10),
-                         arrowcolor="#4D4D4D",
-                         footwall=False,
-                         **kwargs):
+    def as_arrow_on_pole(
+        self,
+        planes,
+        lines,
+        sense=True,
+        arrowsize=radians(10),
+        arrowcolor="#4D4D4D",
+        footwall=False,
+        **kwargs
+    ):
         options = ChainMap({}, kwargs, self.arrow_defaults)
         for plane, line in zip(planes, lines):
-            arrow_from = cos(arrowsize / 2.) * plane + sin(
-                arrowsize / 2.) * line
-            arrow_to = cos(-arrowsize / 2.) * plane + sin(
-                -arrowsize / 2.) * line
+            arrow_from = (
+                cos(arrowsize / 2.0) * plane + sin(arrowsize / 2.0) * line
+            )
+            arrow_to = (
+                cos(-arrowsize / 2.0) * plane + sin(-arrowsize / 2.0) * line
+            )
             if footwall:
                 arrow_from, arrow_to = arrow_to, arrow_from
             X, Y = self.projection.direct((arrow_from, arrow_to))
             if not sense:
                 self.axis.add_line(
-                    Line2D(X, Y, c=arrowcolor, label='_nolegend_', **options))
+                    Line2D(X, Y, c=arrowcolor, label="_nolegend_", **options)
+                )
             else:
                 a, b = (X[0], Y[0]), (X[1], Y[1])
                 self.axis.add_patch(
@@ -381,23 +488,27 @@ class ProjectionPlot(object):
                         b,
                         shrinkA=0.0,
                         shrinkB=0.0,
-                        arrowstyle='->,head_length=2.5,head_width=1',
-                        connectionstyle='arc3,rad=0.0',
+                        arrowstyle="->,head_length=2.5,head_width=1",
+                        connectionstyle="arc3,rad=0.0",
                         mutation_scale=2.0,
                         ec=arrowcolor,
-                        **options))
+                        **options
+                    )
+                )
 
-    def as_arrow_on_plane(self,
-                          planes,
-                          lines,
-                          sense=True,
-                          arrowsize=radians(10),
-                          arrowcolor="#4D4D4D",
-                          footwall=False,
-                          **kwargs):
-        self.as_arrow_on_pole(lines, planes, sense, arrowsize, arrowcolor,
-                              not footwall, **kwargs)
-
+    def as_arrow_on_plane(
+        self,
+        planes,
+        lines,
+        sense=True,
+        arrowsize=radians(10),
+        arrowcolor="#4D4D4D",
+        footwall=False,
+        **kwargs
+    ):
+        self.as_arrow_on_pole(
+            lines, planes, sense, arrowsize, arrowcolor, not footwall, **kwargs
+        )
 
 class CircularPlot(object):
     pass
