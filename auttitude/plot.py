@@ -11,6 +11,8 @@ except ImportError:
 
     def ChainMap(*args):
         return dict(chain(*map(lambda d: d.items(), reversed(args))))
+
+
 from inspect import isclass
 from math import cos, pi, radians, sin, sqrt
 
@@ -395,3 +397,7 @@ class ProjectionPlot(object):
                           **kwargs):
         self.as_arrow_on_pole(lines, planes, sense, arrowsize, arrowcolor,
                               not footwall, **kwargs)
+
+
+class CircularPlot(object):
+    pass
