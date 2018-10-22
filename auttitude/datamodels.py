@@ -5,8 +5,14 @@ from math import acos, asin, atan2, cos, degrees, pi, radians, sin, sqrt
 
 import numpy as np
 
-from auttitude.io import sphere_line, sphere_plane, translate_attitude,\
-    dcos_plane, dcos_line
+from auttitude.io import (
+    sphere_line,
+    sphere_plane,
+    translate_attitude,
+    dcos_plane,
+    dcos_line,
+    format_attitude,
+)
 from auttitude.math import normalized_cross
 from auttitude.stats import DEFAULT_GRID, SphericalStatistics
 
@@ -71,6 +77,23 @@ class Vector(np.ndarray):
             x, y = -x, -y
         return degrees(atan2(x, y)) % 360, degrees(asin(abs(z)))
 
+    def format(
+        self,
+        strike=False,
+        direction_format="quadrant",
+        strike_format="right hand rule",
+    ):
+        """Returns the spherical coordinates of the normalized vector,
+        considering it to be a Line in geological sense, as a
+        Trend/Plunge pair formatted using the given parameters.
+        Please refer to format_attitude method for description of parameters."""
+        return format_attitude(
+            *self.attitude,
+            strike=strike,
+            direction_format=direction_format,
+            strike_format=strike_format
+        )
+
     @property  # this should be cached
     def length(self):
         """Returns the euclidian norm of this vector."""
@@ -80,9 +103,9 @@ class Vector(np.ndarray):
     def direction_vector(self):
         """Returns the vector's left horizontal perpendicular vector.
         defaults to (1, 0, 0) if the vector is vertical."""
-        if abs(self[2]) == 1.:
-            return Vector((1., 0., 0.))
-        direction = Vector((self[1], -self[0], 0.))
+        if abs(self[2]) == 1.0:
+            return Vector((1.0, 0.0, 0.0))
+        direction = Vector((self[1], -self[0], 0.0))
         return direction / direction.length
 
     @property
@@ -106,8 +129,13 @@ class Vector(np.ndarray):
     def cross_product_matrix(self):
         """Returns the matrix that operates the cross product with this vector
         when multiplied by another vector"""
-        return np.array(((0., -self[2], self[1]), (self[2], 0., -self[0]),
-                         (-self[1], self[0], 0.)))
+        return np.array(
+            (
+                (0.0, -self[2], self[1]),
+                (self[2], 0.0, -self[0]),
+                (-self[1], self[0], 0.0),
+            )
+        )
 
     def get_rotation_matrix(self, theta):
         """Returns the counterclockwise rotation matrix about this vector
@@ -116,10 +144,13 @@ class Vector(np.ndarray):
         Parameters:
             theta: Rotation angle in radians
         """
-        return cos(theta)*np.eye(3) + sin(theta)*self.cross_product_matrix +\
-            (1 - cos(theta))*self.projection_matrix
+        return (
+            cos(theta) * np.eye(3)
+            + sin(theta) * self.cross_product_matrix
+            + (1 - cos(theta)) * self.projection_matrix
+        )
 
-    def get_great_circle(self, step=radians(1.), offset=0.):
+    def get_great_circle(self, step=radians(1.0), offset=0.0):
         """Returns an array of n points equally spaced along the great circle
         normal to this vector.
 
@@ -128,13 +159,17 @@ class Vector(np.ndarray):
             circle.
             offset: Angular offset in radians from direction to generate points.
         """
-        theta_range = np.arange(offset, 2 * pi + offset, step) % (2*pi)
+        theta_range = np.arange(offset, 2 * pi + offset, step) % (2 * pi)
         sin_range = np.sin(theta_range)
         cos_range = np.cos(theta_range)
-        return (self.direction_vector[:, None] * cos_range +
-                self.dip_vector[:, None] * sin_range).T,
+        return (
+            (
+                self.direction_vector[:, None] * cos_range
+                + self.dip_vector[:, None] * sin_range
+            ).T,
+        )
 
-    def get_small_circle(self, alpha, A=0, B=0, step=radians(1.), offset=0.):
+    def get_small_circle(self, alpha, A=0, B=0, step=radians(1.0), offset=0.0):
         """Returns a pair of arrays representing points spaced step along
         both small circles with an semi-apical opening of alpha around
         this vector.
@@ -148,16 +183,22 @@ class Vector(np.ndarray):
             offset: Angular offset in radians from direction to generate points.
         """
         if A == 0 and B == 0:
-            sc = self.get_great_circle(step, offset)[0].T * sin(
-                alpha) + self[:, None] * cos(alpha)
+            sc = self.get_great_circle(step, offset)[0].T * sin(alpha) + self[
+                :, None
+            ] * cos(alpha)
         else:
-            theta_range = np.arange(0, 2*pi, step)
-            alpha_ = alpha + A * np.cos(2*theta_range) + B * np.sin(2*theta_range)
-            sc = self.get_great_circle(step)[0].T * np.sin(
-                alpha_) + self[:, None] * np.cos(alpha_)
+            theta_range = np.arange(0, 2 * pi, step)
+            alpha_ = (
+                alpha
+                + A * np.cos(2 * theta_range)
+                + B * np.sin(2 * theta_range)
+            )
+            sc = self.get_great_circle(step)[0].T * np.sin(alpha_) + self[
+                :, None
+            ] * np.cos(alpha_)
         return sc.T, -sc.T
 
-    def arc_to(self, other, step=radians(1.)):
+    def arc_to(self, other, step=radians(1.0)):
         """Returns an array of points spaced step along the great circle
         between both vectors.
 
@@ -170,7 +211,7 @@ class Vector(np.ndarray):
         theta_range = np.arange(0, self.angle_with(other), step)
         sin_range = np.sin(theta_range)
         cos_range = np.cos(theta_range)
-        return (self * cos_range[:, None] + normal * sin_range[:, None]),
+        return ((self * cos_range[:, None] + normal * sin_range[:, None]),)
 
 
 class Plane(Vector):
@@ -216,6 +257,22 @@ class Plane(Vector):
             x, y = -x, -y
         return degrees(atan2(-x, -y)) % 360, degrees(acos(abs(z)))
 
+    def format(
+        self,
+        strike=True,
+        direction_format="azimuth",
+        strike_format="dip quadrant",
+    ):
+        """Returns the spherical coordinates of the plane as a
+        Direction/Dip pair formatted using the given parameters.
+        Please refer to format_attitude method for description of parameters."""
+        return format_attitude(
+            *self.attitude,
+            strike=strike,
+            direction_format=direction_format,
+            strike_format=strike_format
+        )
+
 
 class Line(Vector):
     """
@@ -252,6 +309,7 @@ class VectorSet(np.ndarray):
     Parameters:
         dcos_data: Is an array of direction cosines.
     """
+
     item_class = Vector
 
     def __new__(cls, dcos_data):
@@ -343,7 +401,7 @@ class VectorSet(np.ndarray):
                 angles[i, j] = self_vector.angle_with(other_vector, precise)
         return angles
 
-    def get_great_circle(self, step=radians(1.)):
+    def get_great_circle(self, step=radians(1.0)):
         """Returns a generator to the list of great circles of 
         this VectorSet vectors.
 
@@ -361,6 +419,7 @@ class PlaneSet(VectorSet):
     Parameters:
         dcos_data: Is an array of direction cosines.
     """
+
     item_class = Plane
 
     def intersection_with(self, other):
@@ -385,6 +444,7 @@ class LineSet(VectorSet):
     Parameters:
         dcos_data: Is an array of direction cosines.
     """
+
     item_class = Line
 
     def planes_with(self, other):

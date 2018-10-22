@@ -211,15 +211,15 @@ class ProjectionPlot(object):
         print(projected_polygon.shape)
         first = projected_polygon[0]
         last = projected_polygon[-1]
-        mid = (first + last)/2
-        mid = mid/np.linalg.norm(mid)
+        mid = (first + last) / 2
+        mid = mid / np.linalg.norm(mid)
         if np.dot(first, last) == 0.0:
             mid = np.array([first[1], -first[0]])
         if np.linalg.norm(first) > 1.0 and np.linalg.norm(last) > 1.0:
-            return np.vstack([projected_polygon, [2*last, 3*mid, 2*first]])
+            return np.vstack(
+                [projected_polygon, [2 * last, 3 * mid, 2 * first]]
+            )
         return projected_polygon
-
-
 
     @staticmethod
     def _net_grid(gc_spacing=10.0, sc_spacing=10.0, n=360, clean_caps=True):
@@ -327,9 +327,9 @@ class ProjectionPlot(object):
                 )
             )
             for circle in lines
-            for segment in self._join_segments(self._clip_lines(
-                np.dot(circle, self.projection.R.T)
-            ))
+            for segment in self._join_segments(
+                self._clip_lines(np.dot(circle, self.projection.R.T))
+            )
         ]
         circle_collection = LineCollection(projected_lines, **options)
         circle_collection.set_clip_path(self.primitive)
@@ -342,15 +342,17 @@ class ProjectionPlot(object):
         options = ChainMap({}, kwargs, self.polygon_defaults)
         # should change this for better support of huge data
         projected_polygons = [
-            self._close_polygon(np.transpose(
-                self.projection.direct(
-                    segment, invert_positive=False, rotate=False
+            self._close_polygon(
+                np.transpose(
+                    self.projection.direct(
+                        segment, invert_positive=False, rotate=False
+                    )
                 )
-            ))
+            )
             for circle in polygons
-            for segment in self._join_segments(self._clip_lines(
-                np.dot(circle, self.projection.R.T)
-            ))
+            for segment in self._join_segments(
+                self._clip_lines(np.dot(circle, self.projection.R.T))
+            )
         ]
         poly_collection = PolyCollection(projected_polygons, **options)
         poly_collection.set_clip_path(self.primitive)
@@ -509,6 +511,7 @@ class ProjectionPlot(object):
         self.as_arrow_on_pole(
             lines, planes, sense, arrowsize, arrowcolor, not footwall, **kwargs
         )
+
 
 class CircularPlot(object):
     pass
