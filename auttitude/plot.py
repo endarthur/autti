@@ -25,6 +25,7 @@ from matplotlib.mlab import griddata
 from matplotlib.patches import Circle, FancyArrowPatch
 
 from auttitude.math import build_rotation_matrix
+import auttitude as at
 
 
 class ProjectionBase(object):
@@ -66,6 +67,22 @@ class ProjectionBase(object):
             return np.transpose(self.I.dot(data))
         else:
             return np.transpose(data)
+
+    def read_plot(self, X, Y):
+        if X * X + Y * Y > 1.0:
+            return ""
+        vector = self.inverse((X, Y))
+        vector = self.I.dot(vector)
+        theta, phi = at.Vector(vector).attitude
+        if phi >= 0.0:
+            return "Pole: %05.1f/%04.1f\nLine: %05.1f/%04.1f" % (
+                theta,
+                phi,
+                (theta - 180) % 360.0,
+                90.0 - phi,
+            )
+        else:
+            return ""
 
     def direct(self, data, invert_positive=True, rotate=True):
         return self._dtr(*self._pre_direct(data, invert_positive, rotate))
@@ -274,6 +291,8 @@ class ProjectionPlot(object):
         else:
             self.axis = axis
             self.clear_diagram()
+
+        self.axis.format_coord = self.projection.read_plot
 
     def clear_diagram(self):
         """Clears the plot area and plot the primitive."""
