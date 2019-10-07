@@ -4,12 +4,12 @@ from setuptools import setup, find_packages
 
 setup(
     name="auttitude",
-    version="0.1.0alpha",
+    version="0.1.1",
     packages=find_packages(),
 
     install_requires=[
         'numpy',
-        'matplotlib',
+        'matplotlib<=2.2.4',
     ],
 
     # metadata for upload to PyPI
@@ -19,7 +19,7 @@ setup(
     license="MIT",
     keywords="geology attitude stereonet projection structural",
     url="https://github.com/endarthur/autti",
-    dowload_url="https://github.com/endarthur/autti/archive/v0.1.0alpha.tar.gz",
+    dowload_url="https://github.com/endarthur/autti/archive/v0.1.1.tar.gz",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",
