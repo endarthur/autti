@@ -28,7 +28,7 @@ class SphericalGrid(object):
         for phi in np.arange(node_spacing, 90., node_spacing):
             azimuth_spacing = degrees(2 * asin(
                 (sin(spacing / 2) / sin(radians(phi)))))
-            for theta in np.linspace(0., 360. - azimuth_spacing, 360. // azimuth_spacing):
+            for theta in np.linspace(0., 360. - azimuth_spacing, int(360. // azimuth_spacing)):
                 nodes.append((theta + phi + node_spacing / 2, 90. - phi))
                 nodes.append((theta - 180 + phi + node_spacing / 2, phi - 90.))
         for theta in np.arange(0., 360., node_spacing):
@@ -152,7 +152,7 @@ class CircularGrid(object):
         data_weight = np.ones(
             data.shape[0]) if data_weight is None else data_weight
         upscale = 1. + 2. * np.power(
-            weight, np.linspace(0., aperture, radians(spacing))).sum()
+            weight, np.arange(0., aperture, radians(spacing))).sum()
         return (np.where(d >= c, data_weight, 0) * np.power(weight, theta)
                 ).sum(axis=1)[:, None] * upscale / data_weight.sum()
 

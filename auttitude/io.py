@@ -380,7 +380,7 @@ def format_attitude(
         if strike_format in ["right hand rule", "rhr"]:
             direction = (direction - 90.0) % 360.0
             dip_quadrant = ""
-        elif strike_format in ["dip quadrant"]:
+        elif strike_format in ["dip quadrant", "quadrant"]:
             dip_quadrant = quadrant(direction)
             direction = (direction - 90.0) % 180.0
         else:

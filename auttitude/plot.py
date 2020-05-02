@@ -276,7 +276,7 @@ class ProjectionPlot(object):
                 ]
         return great_circles, small_circles
 
-    def __init__(self, axis=None, projection=None, rotation=None):
+    def __init__(self, axis=None, projection=None, rotation=None, limits=None):
         if projection is None:
             self.projection = EqualArea(rotation)
         elif isclass(projection):
@@ -287,19 +287,23 @@ class ProjectionPlot(object):
             from matplotlib import pyplot as plt
 
             self.axis = plt.gca()
-            self.clear_diagram()
+            self.clear_diagram(limits)
         else:
             self.axis = axis
             self.clear_diagram()
 
         self.axis.format_coord = self.projection.read_plot
 
-    def clear_diagram(self):
+    def clear_diagram(self, limits=None):
         """Clears the plot area and plot the primitive."""
         self.axis.cla()
         self.axis.axis("equal")
-        self.axis.set_xlim(-1.1, 1.1)
-        self.axis.set_ylim(-1.1, 1.1)
+        if limits is not None:
+            left, right, up, down = limits
+        else:
+            left, right, up, down = -1.1, 1.1, -1.1, 1.1
+        self.axis.set_xlim(left, right)
+        self.axis.set_ylim(up, down)
         self.axis.set_axis_off()
         self.plot_primitive()
 
