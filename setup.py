@@ -9,7 +9,7 @@ setup(
 
     install_requires=[
         'numpy',
-        'matplotlib<=2.2.4',
+        'matplotlib',
     ],
 
     # metadata for upload to PyPI
