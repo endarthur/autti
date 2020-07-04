@@ -404,19 +404,22 @@ class ProjectionPlot(object):
             intervals = np.linspace(0, count.max(), n_contours)
         xi = yi = np.linspace(-1.1, 1.1, resolution)
         # maybe preselect nodes here on z tolerance
+        # inside = nodes[:, -1] <= 0.1
+        # nodes = nodes[inside]
+        # count = count[inside]
         X, Y = self.projection.direct(nodes, invert_positive=False)
-        zi = griddata(X, Y, count, xi, yi, interp="linear")
+        # zi = griddata(X, Y, count, xi, yi, interp="linear")
         # use the default values if not user input
         # https://stackoverflow.com/a/6354485/1457481
         options = ChainMap({}, kwargs, self.contour_defaults)
 
         contour_fill, contour_lines = None, None
         if contour_mode in ("fillover", "fill"):
-            contour_fill = self.axis.contourf(xi, yi, zi, intervals, **options)
+            contour_fill = self.axis.tricontourf(X, Y, count, levels=intervals, **options)
             for collection in contour_fill.collections:
                 collection.set_clip_path(self.primitive)
         if contour_mode != "fill":
-            contour_lines = self.axis.contour(xi, yi, zi, intervals, **options)
+            contour_lines = self.axis.tricontour(X, Y, count, levels=intervals, **options)
             for collection in contour_lines.collections:
                 collection.set_clip_path(self.primitive)
 
