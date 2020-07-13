@@ -21,7 +21,6 @@ import numpy as np
 from matplotlib import patheffects
 from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.lines import Line2D
-from matplotlib.mlab import griddata
 from matplotlib.patches import Circle, FancyArrowPatch
 
 from auttitude.math import build_rotation_matrix
